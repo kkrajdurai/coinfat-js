@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Coinfat — inline checkout</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 2rem 1rem;
+        background: #fafafa;
+      }
+      main {
+        max-width: 40rem;
+        margin: 0 auto;
+      }
+      #pay {
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Inline checkout</h1>
+      <p>The widget mounts inline, in your page's own layout.</p>
+
+      <!-- The SDK renders into this element. `layout: "wide"` lets it use two
+           columns when the slot is wide enough. -->
+      <div id="pay"></div>
+    </main>
+
+    <!--
+      The `<script>`-tag build — a callable `window.Coinfat`. This loads the local
+      one; on a real site point it at the CDN, e.g.
+      <script src="https://cdn.jsdelivr.net/npm/@coinfat/checkout@1/dist/coinfat.iife.js"></script>
+    -->
+    <script src="../dist/coinfat.iife.js"></script>
+    <script>
+      // SECURITY: the invoice `ulid` is created on YOUR SERVER with your secret API
+      // key, then handed to the browser. The secret key must never appear here — the
+      // ulid is the only capability the browser needs. Swap in a real ulid to run.
+      const invoice = "REPLACE_WITH_INVOICE_ULID";
+
+      const coinfat = Coinfat({environment: "development"});
+
+      coinfat.checkout({
+        invoice,
+        display: "inline",
+        mount: "#pay",
+        layout: "wide",
+        // theme: {accent: "#ff8201", mode: "auto"},
+        onCompleted: (inv) => console.log("payment complete", inv.ulid),
+        onError: (err) =>
+          console.error("checkout error", err.status, err.message)
+      });
+    </script>
+  </body>
+</html>

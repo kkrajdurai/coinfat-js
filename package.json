@@ -1,0 +1,77 @@
+{
+  "name": "@coinfat/checkout",
+  "version": "1.0.2",
+  "description": "Embedded crypto checkout SDK for Coinfat.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "coinfat",
+    "crypto",
+    "payments",
+    "checkout",
+    "embed",
+    "widget"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kkrajdurai/coinfat-js.git"
+  },
+  "bugs": "https://github.com/kkrajdurai/coinfat-js/issues",
+  "homepage": "https://github.com/kkrajdurai/coinfat-js#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "examples"
+  ],
+  "main": "./dist/coinfat.umd.cjs",
+  "module": "./dist/coinfat.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/coinfat.iife.js",
+  "jsdelivr": "./dist/coinfat.iife.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/coinfat.js",
+      "require": "./dist/coinfat.umd.cjs"
+    },
+    "./iife": {
+      "types": "./dist/global.d.ts",
+      "default": "./dist/coinfat.iife.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vite build --config vite.config.iife.ts && tsc -p tsconfig.build.json",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:browser": "playwright test",
+    "prepublishOnly": "npm run build",
+    "preversion": "npm run format:check && npm run typecheck && npm test",
+    "release:patch": "npm version patch && git push --follow-tags",
+    "release:minor": "npm version minor && git push --follow-tags",
+    "release:major": "npm version major && git push --follow-tags"
+  },
+  "dependencies": {
+    "preact": "^10.29.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0",
+    "@preact/preset-vite": "^2.10.5",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.2",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.8.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
+  }
+}

@@ -1,0 +1,184 @@
+import type {CheckoutApiClient} from "../core/api.js";
+import {CheckoutController} from "../core/checkout.js";
+import type {
+  CheckoutCallbacks,
+  CheckoutTheme,
+  WidgetDisplay,
+  WidgetLayout
+} from "../core/options.js";
+import {Checkout} from "../ui/Checkout.js";
+import {Modal} from "../ui/Modal.js";
+import {
+  resolveStrings,
+  type CheckoutStringsOverride
+} from "../ui/strings/index.js";
+import {I18nProvider} from "../ui/strings/context.js";
+import {
+  applyAccent,
+  createShadowHost,
+  renderApp,
+  resolveElement,
+  type ShadowMount
+} from "./mount.js";
+
+export interface CheckoutParams extends CheckoutCallbacks {
+  /** The invoice ulid, created server-side with your secret API key. */
+  invoice: string;
+  display: WidgetDisplay;
+  /** Target element or selector — required for `display: 'inline'`. */
+  mount?: string | HTMLElement;
+  /** 'wide' (two-column, collapses on narrow) or 'narrow'. Inline defaults 'wide', modal 'narrow'. */
+  layout?: WidgetLayout;
+  theme?: CheckoutTheme;
+  /**
+   * BCP-47 locale for copy and number formatting. Only `en` ships today; an unknown
+   * tag falls back to English strings while `Intl` still formats amounts for the tag.
+   */
+  locale?: string;
+  /** Override any payer-facing string, merged over the resolved locale. */
+  strings?: CheckoutStringsOverride;
+  /** Redirect to the invoice's success_url on completion. Defaults to false. */
+  redirectOnComplete?: boolean;
+}
+
+/** Just under the 32-bit signed max, above any merchant stacking context. */
+const OVERLAY_Z_INDEX = "2147483000";
+
+export class CheckoutSession {
+  private readonly controller: CheckoutController;
+  private mount: ShadowMount | null = null;
+  private opened = false;
+
+  constructor(
+    api: CheckoutApiClient,
+    private readonly params: CheckoutParams
+  ) {
+    // On the controller, not the view: it outlives a modal close/reopen, so each
+    // transition is reported once per invoice.
+    this.controller = new CheckoutController(params.invoice, api, {
+      callbacks: this.composeCallbacks()
+    });
+
+    if (params.display === "inline") {
+      this.mountInline();
+    }
+  }
+
+  /** Open the modal presenter. No-op for inline. */
+  open(): void {
+    if (this.params.display !== "modal" || this.opened) {
+      return;
+    }
+
+    this.mountModal();
+  }
+
+  /** Close and tear down the modal presenter. */
+  close(): void {
+    if (this.opened) {
+      this.destroy();
+    }
+  }
+
+  /** Stop polling and remove the widget from the DOM. */
+  destroy(): void {
+    this.controller.stop();
+    this.mount?.unmount();
+    this.mount = null;
+    this.opened = false;
+  }
+
+  private mountInline(): void {
+    const target = resolveElement(this.params.mount);
+
+    if (!target) {
+      throw new Error(
+        "coinfat: `mount` (element or selector) is required for an inline checkout"
+      );
+    }
+
+    this.mount = createShadowHost(this.params.theme);
+    target.appendChild(this.mount.host);
+    this.renderInto(this.params.layout ?? "wide", false);
+    this.controller.start();
+  }
+
+  private mountModal(): void {
+    this.mount = createShadowHost(this.params.theme);
+    // The host is the full-viewport layer; Modal paints the backdrop inside it.
+    this.mount.host.style.position = "fixed";
+    this.mount.host.style.inset = "0";
+    this.mount.host.style.zIndex = OVERLAY_Z_INDEX;
+    document.body.appendChild(this.mount.host);
+    this.opened = true;
+    this.renderInto(this.params.layout ?? "narrow", true);
+    this.controller.start();
+  }
+
+  private renderInto(layout: WidgetLayout, modal: boolean): void {
+    if (!this.mount) {
+      return;
+    }
+
+    const checkout = (
+      <Checkout
+        controller={this.controller}
+        layout={layout}
+        onRequestClose={modal ? () => this.close() : undefined}
+      />
+    );
+
+    const i18n = resolveStrings(this.params.locale, this.params.strings);
+    const app = modal ? (
+      <Modal layout={layout} onClose={() => this.close()}>
+        {checkout}
+      </Modal>
+    ) : (
+      checkout
+    );
+
+    renderApp(this.mount, <I18nProvider value={i18n}>{app}</I18nProvider>);
+  }
+
+  /** Merchant callbacks, with the opt-in success_url redirect folded into onCompleted. */
+  private composeCallbacks(): CheckoutCallbacks {
+    const {
+      onReady,
+      onCoinSelected,
+      onPaymentDetected,
+      onCompleted,
+      onExpired,
+      onCanceled,
+      onError
+    } = this.params;
+
+    return {
+      // The store's brand_color seeds the accent on first load, unless the merchant
+      // passed an explicit `theme.accent` (which wins) — mirrors the CSS var default
+      // `--cf-primary: var(--cf-accent, var(--cf-brand))`.
+      onReady: (invoice) => {
+        if (
+          this.mount &&
+          !this.params.theme?.accent &&
+          invoice.store.brand_color
+        ) {
+          applyAccent(this.mount.host, invoice.store.brand_color);
+        }
+        onReady?.(invoice);
+      },
+      onCoinSelected,
+      onPaymentDetected,
+      onExpired,
+      onCanceled,
+      onError,
+      // The merchant's handler runs first: the redirect navigates away, so
+      // anything it wants to do must already have happened.
+      onCompleted: (invoice) => {
+        onCompleted?.(invoice);
+        if (this.params.redirectOnComplete && invoice.success_url) {
+          window.location.assign(invoice.success_url);
+        }
+      }
+    };
+  }
+}

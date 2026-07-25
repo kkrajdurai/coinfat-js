@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  # OIDC: npm trusted publishing exchanges this for a short-lived publish token.
+  # No NPM_TOKEN secret exists anywhere in this repo, by design.
+  id-token: write
+  # Creating the GitHub Release.
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # setup-node@v6 + registry-url and no NODE_AUTH_TOKEN is the combination
+      # npm documents for trusted publishing; npm >= 11.5.1 (Node 24) does the
+      # OIDC exchange itself. Do not add a token here.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tag must match package.json version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "tag v$tag does not match package.json $pkg" >&2
+            exit 1
+          fi
+
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      # Provenance is generated automatically under trusted publishing.
+      #
+      # The bootstrap version is published by hand — a trusted publisher can only
+      # be configured on a package that already exists — so its tag would arrive
+      # here for a version the registry already has. Skip rather than fail, which
+      # also makes re-running a release run harmless.
+      - name: Publish
+        run: |
+          spec="$(node -p "const p=require('./package.json'); p.name + '@' + p.version")"
+          if npm view "$spec" version >/dev/null 2>&1; then
+            echo "$spec is already on the registry — skipping publish." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          npm publish
+
+      # The integrity hash belongs next to the version it describes, permanently:
+      # a merchant pinning this release needs the hash for exactly these bytes, and
+      # a run summary expires. Written into the release body as a paste-ready tag,
+      # and mirrored to the summary for whoever is watching the run.
+      - name: Release notes with the integrity hash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          sri="sha384-$(openssl dgst -sha384 -binary dist/coinfat.iife.js | openssl base64 -A)"
+
+          {
+            echo '### Script tag'
+            echo
+            echo 'Pin the version — the hash covers these exact bytes, so it only holds on a'
+            echo 'pinned URL. `crossorigin` is required: without it the browser refuses the'
+            echo 'request even when the hash is right.'
+            echo
+            echo '```html'
+            echo '<script'
+            echo "  src=\"https://cdn.jsdelivr.net/npm/@coinfat/checkout@$version/dist/coinfat.iife.js\""
+            echo "  integrity=\"$sri\""
+            echo '  crossorigin="anonymous"></script>'
+            echo '```'
+            echo
+            echo 'Prefer unpkg? Same file, same hash:'
+            echo "\`https://unpkg.com/@coinfat/checkout@$version/dist/coinfat.iife.js\`"
+            echo
+          } > "$RUNNER_TEMP/release-notes.md"
+
+          cat "$RUNNER_TEMP/release-notes.md" >> "$GITHUB_STEP_SUMMARY"
+
+      # `gh release create` hard-fails on a tag that already has a release, so an
+      # existing one is left alone — keeping a re-run of this workflow harmless, the
+      # same way the publish step already is.
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists — left as published." \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --verify-tag \
+              --generate-notes \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi

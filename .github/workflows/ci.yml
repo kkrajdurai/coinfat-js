@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # dist/ is gitignored, so this is the only place the bundles get sanity
+      # checked: the shadow-DOM isolation invariant. Both the ESM bundle and the
+      # `<script>`-tag bundle merchants load from a CDN carry their own copy of the
+      # stylesheet, so both are checked.
+      - name: Shadow-DOM style isolation
+        run: |
+          fail() { echo "::error file=$1::$2"; exit 1; }
+
+          for bundle in dist/coinfat.js dist/coinfat.iife.js; do
+            grep -q -- "--cf-primary" "$bundle" \
+              || fail "$bundle" "design tokens missing — the stylesheet did not inline"
+            grep -q ":host" "$bundle" \
+              || fail "$bundle" "no :host rules — styles would not scope to the shadow root"
+            grep -q ":root" "$bundle" \
+              && fail "$bundle" ":root selector present — it never matches inside a shadow tree"
+
+            echo "✓ ${bundle##*/} — tokens inlined, scoped to :host, no :root leak"
+          done
+
+  # Real-engine coverage: shadow-DOM style isolation and the modal focus trap, which
+  # the jsdom suite can only assert structurally. Separate job — the browser download
+  # is heavy and independent of the checks above.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps
+      - run: npm run test:browser

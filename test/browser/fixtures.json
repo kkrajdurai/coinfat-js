@@ -1,0 +1,779 @@
+{
+  "invoice": {
+    "ulid": "01test000000000000000000cf",
+    "status": "pending",
+    "store": {
+      "ulid": "01kx6h3g9kcwyz5v0cxxtk4zx0",
+      "name": "Example Store",
+      "logo": null,
+      "brand_color": "#1D4ED8",
+      "description": null,
+      "support_email": null,
+      "website_url": null
+    },
+    "currency": {
+      "code": "USD",
+      "name": "US Dollar",
+      "is_default": false,
+      "is_active": true,
+      "is_base": true,
+      "exchange_rate": "1",
+      "exchange_rate_auto": "1",
+      "exchange_rate_manual": null,
+      "exchange_type": "auto"
+    },
+    "amount": {
+      "amount": "3",
+      "currency": "USD",
+      "scale": 2
+    },
+    "supported_wallets": [
+      {
+        "id": "bnb",
+        "name": "BNB",
+        "scale": 18,
+        "precision": 8,
+        "currency_scale": null,
+        "symbol": "BNB",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "498.43",
+          "currency": "EUR",
+          "scale": 2
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:02.000000Z"
+      },
+      {
+        "id": "btc",
+        "name": "Bitcoin",
+        "scale": 8,
+        "precision": 8,
+        "currency_scale": null,
+        "symbol": "BTC",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "57118.33",
+          "currency": "EUR",
+          "scale": 2
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:02.000000Z"
+      },
+      {
+        "id": "dash",
+        "name": "Dash",
+        "scale": 8,
+        "precision": 8,
+        "currency_scale": null,
+        "symbol": "DASH",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "28.96",
+          "currency": "EUR",
+          "scale": 2
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:02.000000Z"
+      },
+      {
+        "id": "eth",
+        "name": "Ethereum",
+        "scale": 18,
+        "precision": 8,
+        "currency_scale": null,
+        "symbol": "ETH",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "1655.39",
+          "currency": "EUR",
+          "scale": 2
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:02.000000Z"
+      },
+      {
+        "id": "ltc",
+        "name": "Litecoin",
+        "scale": 8,
+        "precision": 8,
+        "currency_scale": null,
+        "symbol": "LTC",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "40.95",
+          "currency": "EUR",
+          "scale": 2
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:02.000000Z"
+      },
+      {
+        "id": "pol",
+        "name": "Polygon",
+        "scale": 18,
+        "precision": 8,
+        "currency_scale": 5,
+        "symbol": "POL",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "0.069",
+          "currency": "EUR",
+          "scale": 5
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:02.000000Z"
+      },
+      {
+        "id": "trx",
+        "name": "Tron",
+        "scale": 6,
+        "precision": 6,
+        "currency_scale": 4,
+        "symbol": "TRX",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "0.2912",
+          "currency": "EUR",
+          "scale": 4
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:02.000000Z"
+      },
+      {
+        "id": "usdc",
+        "name": "USD Coin",
+        "scale": 6,
+        "precision": 2,
+        "currency_scale": 4,
+        "symbol": "USDC",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "0.8789",
+          "currency": "EUR",
+          "scale": 4
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:02.000000Z"
+      },
+      {
+        "id": "usdt",
+        "name": "Tether USD",
+        "scale": 6,
+        "precision": 2,
+        "currency_scale": 4,
+        "symbol": "USDT",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "0.8784",
+          "currency": "EUR",
+          "scale": 4
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:03.000000Z"
+      }
+    ],
+    "active_payment": {
+      "ulid": "pay_test_1",
+      "status": "pending",
+      "wallet": {
+        "id": "eth",
+        "name": "Ethereum",
+        "scale": 18,
+        "precision": 8,
+        "currency_scale": null,
+        "symbol": "ETH",
+        "svg_icon": "",
+        "unit_price": {
+          "amount": "1655.39",
+          "currency": "EUR",
+          "scale": 2
+        },
+        "created_at": "2026-07-08T15:51:11.000000Z",
+        "updated_at": "2026-07-24T09:00:02.000000Z"
+      },
+      "wallet_network": {
+        "id": "net-4",
+        "name": "Ethereum",
+        "is_active": true,
+        "confirmation": 6,
+        "supports_consolidation": true,
+        "supports_execution_fee": false,
+        "wallet": {
+          "id": "eth",
+          "name": "Ethereum",
+          "scale": 18,
+          "precision": 8,
+          "currency_scale": null,
+          "symbol": "ETH",
+          "svg_icon": "",
+          "unit_price": {
+            "amount": "1655.39",
+            "currency": "EUR",
+            "scale": 2
+          },
+          "created_at": "2026-07-08T15:51:11.000000Z",
+          "updated_at": "2026-07-24T09:00:02.000000Z"
+        },
+        "execution_fee_wallet": null,
+        "created_at": "2026-07-08T15:51:40.000000Z",
+        "updated_at": "2026-07-08T15:51:40.000000Z"
+      },
+      "address": "0x000000000000000000000000000000000000dEaD",
+      "deposit_uri": "ethereum:0x000000000000000000000000000000000000dEaD@11155111?value=1593270027404244",
+      "qr_code_url": "",
+      "expected_value": {
+        "amount": "0.00159327",
+        "wallet": "eth",
+        "symbol": "ETH"
+      },
+      "received_value": {
+        "amount": "0",
+        "wallet": "eth",
+        "symbol": "ETH"
+      },
+      "overpaid": false,
+      "overpaid_value": {
+        "amount": "0",
+        "wallet": "eth",
+        "symbol": "ETH"
+      },
+      "detected_at": null,
+      "rate_expires_at": "2026-07-24T09:43:34.000000Z",
+      "created_at": "2026-07-24T09:28:34.000000Z",
+      "updated_at": "2026-07-24T09:35:05.000000Z",
+      "remaining_value": {
+        "amount": "0.00159327",
+        "wallet": "eth",
+        "symbol": "ETH"
+      }
+    },
+    "success_url": "https://merchant.example/thanks",
+    "cancel_url": null,
+    "expires_at": "2026-07-25T09:24:58.000000Z",
+    "created_at": "2026-07-24T09:24:58.000000Z",
+    "updated_at": "2026-07-24T09:28:34.000000Z"
+  },
+  "wallets": [
+    {
+      "id": "bnb",
+      "name": "BNB",
+      "scale": 18,
+      "precision": 8,
+      "currency_scale": null,
+      "symbol": "BNB",
+      "svg_icon": "",
+      "unit_price": {
+        "amount": "498.91",
+        "currency": "EUR",
+        "scale": 2
+      },
+      "networks": [
+        {
+          "id": "net-1",
+          "name": "BNB Smart Chain",
+          "is_active": true,
+          "confirmation": 15,
+          "supports_consolidation": true,
+          "supports_execution_fee": false,
+          "wallet": {
+            "id": "bnb",
+            "name": "BNB",
+            "scale": 18,
+            "precision": 8,
+            "currency_scale": null,
+            "symbol": "BNB",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "498.91",
+              "currency": "EUR",
+              "scale": 2
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "execution_fee_wallet": null,
+          "created_at": "2026-07-08T15:51:39.000000Z",
+          "updated_at": "2026-07-08T15:51:39.000000Z"
+        }
+      ],
+      "created_at": "2026-07-08T15:51:11.000000Z",
+      "updated_at": "2026-07-24T05:00:02.000000Z"
+    },
+    {
+      "id": "btc",
+      "name": "Bitcoin",
+      "scale": 8,
+      "precision": 8,
+      "currency_scale": null,
+      "symbol": "BTC",
+      "svg_icon": "",
+      "unit_price": {
+        "amount": "57462.1",
+        "currency": "EUR",
+        "scale": 2
+      },
+      "networks": [
+        {
+          "id": "net-2",
+          "name": "Bitcoin",
+          "is_active": true,
+          "confirmation": 3,
+          "supports_consolidation": false,
+          "supports_execution_fee": false,
+          "wallet": {
+            "id": "btc",
+            "name": "Bitcoin",
+            "scale": 8,
+            "precision": 8,
+            "currency_scale": null,
+            "symbol": "BTC",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "57462.1",
+              "currency": "EUR",
+              "scale": 2
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "execution_fee_wallet": null,
+          "created_at": "2026-07-08T15:51:38.000000Z",
+          "updated_at": "2026-07-08T15:51:38.000000Z"
+        }
+      ],
+      "created_at": "2026-07-08T15:51:11.000000Z",
+      "updated_at": "2026-07-24T05:00:02.000000Z"
+    },
+    {
+      "id": "dash",
+      "name": "Dash",
+      "scale": 8,
+      "precision": 8,
+      "currency_scale": null,
+      "symbol": "DASH",
+      "svg_icon": "",
+      "unit_price": {
+        "amount": "28.93",
+        "currency": "EUR",
+        "scale": 2
+      },
+      "networks": [
+        {
+          "id": "net-3",
+          "name": "Dash",
+          "is_active": true,
+          "confirmation": 3,
+          "supports_consolidation": false,
+          "supports_execution_fee": false,
+          "wallet": {
+            "id": "dash",
+            "name": "Dash",
+            "scale": 8,
+            "precision": 8,
+            "currency_scale": null,
+            "symbol": "DASH",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "28.93",
+              "currency": "EUR",
+              "scale": 2
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T04:00:02.000000Z"
+          },
+          "execution_fee_wallet": null,
+          "created_at": "2026-07-08T15:51:38.000000Z",
+          "updated_at": "2026-07-08T15:51:38.000000Z"
+        }
+      ],
+      "created_at": "2026-07-08T15:51:11.000000Z",
+      "updated_at": "2026-07-24T04:00:02.000000Z"
+    },
+    {
+      "id": "eth",
+      "name": "Ethereum",
+      "scale": 18,
+      "precision": 8,
+      "currency_scale": null,
+      "symbol": "ETH",
+      "svg_icon": "",
+      "unit_price": {
+        "amount": "1652.61",
+        "currency": "EUR",
+        "scale": 2
+      },
+      "networks": [
+        {
+          "id": "net-4",
+          "name": "Ethereum",
+          "is_active": true,
+          "confirmation": 6,
+          "supports_consolidation": true,
+          "supports_execution_fee": false,
+          "wallet": {
+            "id": "eth",
+            "name": "Ethereum",
+            "scale": 18,
+            "precision": 8,
+            "currency_scale": null,
+            "symbol": "ETH",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "1652.61",
+              "currency": "EUR",
+              "scale": 2
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "execution_fee_wallet": null,
+          "created_at": "2026-07-08T15:51:40.000000Z",
+          "updated_at": "2026-07-08T15:51:40.000000Z"
+        }
+      ],
+      "created_at": "2026-07-08T15:51:11.000000Z",
+      "updated_at": "2026-07-24T05:00:02.000000Z"
+    },
+    {
+      "id": "ltc",
+      "name": "Litecoin",
+      "scale": 8,
+      "precision": 8,
+      "currency_scale": null,
+      "symbol": "LTC",
+      "svg_icon": "",
+      "unit_price": {
+        "amount": "41.09",
+        "currency": "EUR",
+        "scale": 2
+      },
+      "networks": [
+        {
+          "id": "net-5",
+          "name": "Litecoin",
+          "is_active": true,
+          "confirmation": 3,
+          "supports_consolidation": false,
+          "supports_execution_fee": false,
+          "wallet": {
+            "id": "ltc",
+            "name": "Litecoin",
+            "scale": 8,
+            "precision": 8,
+            "currency_scale": null,
+            "symbol": "LTC",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "41.09",
+              "currency": "EUR",
+              "scale": 2
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "execution_fee_wallet": null,
+          "created_at": "2026-07-08T15:51:41.000000Z",
+          "updated_at": "2026-07-08T15:51:41.000000Z"
+        }
+      ],
+      "created_at": "2026-07-08T15:51:11.000000Z",
+      "updated_at": "2026-07-24T05:00:02.000000Z"
+    },
+    {
+      "id": "pol",
+      "name": "Polygon",
+      "scale": 18,
+      "precision": 8,
+      "currency_scale": 5,
+      "symbol": "POL",
+      "svg_icon": "",
+      "unit_price": {
+        "amount": "0.06786",
+        "currency": "EUR",
+        "scale": 5
+      },
+      "networks": [
+        {
+          "id": "net-6",
+          "name": "Polygon",
+          "is_active": true,
+          "confirmation": 128,
+          "supports_consolidation": true,
+          "supports_execution_fee": false,
+          "wallet": {
+            "id": "pol",
+            "name": "Polygon",
+            "scale": 18,
+            "precision": 8,
+            "currency_scale": 5,
+            "symbol": "POL",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "0.06786",
+              "currency": "EUR",
+              "scale": 5
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "execution_fee_wallet": null,
+          "created_at": "2026-07-08T15:51:40.000000Z",
+          "updated_at": "2026-07-08T15:51:40.000000Z"
+        }
+      ],
+      "created_at": "2026-07-08T15:51:11.000000Z",
+      "updated_at": "2026-07-24T05:00:02.000000Z"
+    },
+    {
+      "id": "trx",
+      "name": "Tron",
+      "scale": 6,
+      "precision": 6,
+      "currency_scale": 4,
+      "symbol": "TRX",
+      "svg_icon": "",
+      "unit_price": {
+        "amount": "0.2896",
+        "currency": "EUR",
+        "scale": 4
+      },
+      "networks": [
+        {
+          "id": "net-7",
+          "name": "Tron",
+          "is_active": true,
+          "confirmation": 20,
+          "supports_consolidation": true,
+          "supports_execution_fee": false,
+          "wallet": {
+            "id": "trx",
+            "name": "Tron",
+            "scale": 6,
+            "precision": 6,
+            "currency_scale": 4,
+            "symbol": "TRX",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "0.2896",
+              "currency": "EUR",
+              "scale": 4
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "execution_fee_wallet": null,
+          "created_at": "2026-07-08T15:55:28.000000Z",
+          "updated_at": "2026-07-08T15:55:28.000000Z"
+        }
+      ],
+      "created_at": "2026-07-08T15:51:11.000000Z",
+      "updated_at": "2026-07-24T05:00:02.000000Z"
+    },
+    {
+      "id": "usdc",
+      "name": "USD Coin",
+      "scale": 6,
+      "precision": 2,
+      "currency_scale": 4,
+      "symbol": "USDC",
+      "svg_icon": "",
+      "unit_price": {
+        "amount": "0.8789",
+        "currency": "EUR",
+        "scale": 4
+      },
+      "networks": [
+        {
+          "id": "net-8",
+          "name": "USDC (Ethereum)",
+          "is_active": true,
+          "confirmation": 6,
+          "supports_consolidation": true,
+          "supports_execution_fee": true,
+          "wallet": {
+            "id": "usdc",
+            "name": "USD Coin",
+            "scale": 6,
+            "precision": 2,
+            "currency_scale": 4,
+            "symbol": "USDC",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "0.8789",
+              "currency": "EUR",
+              "scale": 4
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "execution_fee_wallet": {
+            "id": "eth",
+            "name": "Ethereum",
+            "scale": 18,
+            "precision": 8,
+            "currency_scale": null,
+            "symbol": "ETH",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "1652.61",
+              "currency": "EUR",
+              "scale": 2
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "created_at": "2026-07-08T15:55:28.000000Z",
+          "updated_at": "2026-07-08T15:55:28.000000Z"
+        },
+        {
+          "id": "net-9",
+          "name": "USDC (Polygon)",
+          "is_active": true,
+          "confirmation": 128,
+          "supports_consolidation": true,
+          "supports_execution_fee": true,
+          "wallet": {
+            "id": "usdc",
+            "name": "USD Coin",
+            "scale": 6,
+            "precision": 2,
+            "currency_scale": 4,
+            "symbol": "USDC",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "0.8789",
+              "currency": "EUR",
+              "scale": 4
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "execution_fee_wallet": {
+            "id": "pol",
+            "name": "Polygon",
+            "scale": 18,
+            "precision": 8,
+            "currency_scale": 5,
+            "symbol": "POL",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "0.06786",
+              "currency": "EUR",
+              "scale": 5
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "created_at": "2026-07-08T15:55:29.000000Z",
+          "updated_at": "2026-07-08T15:55:29.000000Z"
+        }
+      ],
+      "created_at": "2026-07-08T15:51:11.000000Z",
+      "updated_at": "2026-07-24T05:00:02.000000Z"
+    },
+    {
+      "id": "usdt",
+      "name": "Tether USD",
+      "scale": 6,
+      "precision": 2,
+      "currency_scale": 4,
+      "symbol": "USDT",
+      "svg_icon": "",
+      "unit_price": {
+        "amount": "0.8783",
+        "currency": "EUR",
+        "scale": 4
+      },
+      "networks": [
+        {
+          "id": "net-10",
+          "name": "USDT (Ethereum)",
+          "is_active": true,
+          "confirmation": 6,
+          "supports_consolidation": true,
+          "supports_execution_fee": true,
+          "wallet": {
+            "id": "usdt",
+            "name": "Tether USD",
+            "scale": 6,
+            "precision": 2,
+            "currency_scale": 4,
+            "symbol": "USDT",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "0.8783",
+              "currency": "EUR",
+              "scale": 4
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:03.000000Z"
+          },
+          "execution_fee_wallet": {
+            "id": "eth",
+            "name": "Ethereum",
+            "scale": 18,
+            "precision": 8,
+            "currency_scale": null,
+            "symbol": "ETH",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "1652.61",
+              "currency": "EUR",
+              "scale": 2
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "created_at": "2026-07-08T15:51:42.000000Z",
+          "updated_at": "2026-07-08T15:51:42.000000Z"
+        },
+        {
+          "id": "net-11",
+          "name": "USDT (Tron)",
+          "is_active": true,
+          "confirmation": 20,
+          "supports_consolidation": true,
+          "supports_execution_fee": true,
+          "wallet": {
+            "id": "usdt",
+            "name": "Tether USD",
+            "scale": 6,
+            "precision": 2,
+            "currency_scale": 4,
+            "symbol": "USDT",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "0.8783",
+              "currency": "EUR",
+              "scale": 4
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:03.000000Z"
+          },
+          "execution_fee_wallet": {
+            "id": "trx",
+            "name": "Tron",
+            "scale": 6,
+            "precision": 6,
+            "currency_scale": 4,
+            "symbol": "TRX",
+            "svg_icon": "",
+            "unit_price": {
+              "amount": "0.2896",
+              "currency": "EUR",
+              "scale": 4
+            },
+            "created_at": "2026-07-08T15:51:11.000000Z",
+            "updated_at": "2026-07-24T05:00:02.000000Z"
+          },
+          "created_at": "2026-07-08T15:55:28.000000Z",
+          "updated_at": "2026-07-08T15:55:28.000000Z"
+        }
+      ],
+      "created_at": "2026-07-08T15:51:11.000000Z",
+      "updated_at": "2026-07-24T05:00:03.000000Z"
+    }
+  ],
+  "ulid": "01test000000000000000000cf"
+}

@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+/*
+ * Coinfat's design tokens. Two Shadow-DOM specifics:
+ *
+ * 1. `@theme inline` makes utilities compile to `var(--cf-*)` references rather
+ *    than emitted vars, so they resolve from the `:host` block below instead of a
+ *    `:root` that does not exist inside a shadow tree.
+ * 2. Every token is prefixed `--cf-` because CSS custom properties INHERIT through
+ *    the shadow boundary — an unprefixed `--primary` on the host page would leak in.
+ */
+
+@theme inline {
+  /* System stack (no bundled brand fonts — a deliberate light-embed call).
+     Headings differ by weight, not family. */
+  --font-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: var(--font-sans);
+
+  --color-background: var(--cf-background);
+  --color-foreground: var(--cf-foreground);
+  --color-card: var(--cf-card);
+  --color-card-foreground: var(--cf-card-foreground);
+  --color-muted: var(--cf-muted);
+  --color-muted-foreground: var(--cf-muted-foreground);
+  --color-primary: var(--cf-primary);
+  --color-primary-foreground: var(--cf-primary-foreground);
+  --color-secondary: var(--cf-secondary);
+  --color-secondary-foreground: var(--cf-secondary-foreground);
+  --color-border: var(--cf-border);
+  --color-input: var(--cf-input);
+  --color-ring: var(--cf-ring);
+  --color-destructive: var(--cf-destructive);
+  --color-success: var(--cf-success);
+  --color-warning: var(--cf-warning);
+  --color-info: var(--cf-info);
+
+  --radius-sm: calc(var(--cf-radius) * 0.6);
+  --radius-md: calc(var(--cf-radius) * 0.8);
+  --radius-lg: var(--cf-radius);
+  --radius-xl: calc(var(--cf-radius) * 1.4);
+  --radius-2xl: calc(var(--cf-radius) * 1.8);
+}
+
+:host {
+  /* Brand + merchant accent seam: --cf-accent (set from a merchant `theme.accent`
+     override at mount, else from the store's brand_color once the invoice loads —
+     see widget/mount.ts applyAccent + session.tsx) wins over the default brand
+     orange. */
+  --cf-brand: #ff8201;
+  --cf-primary: var(--cf-accent, var(--cf-brand));
+  --cf-primary-foreground: #241f21;
+
+  --cf-background: oklch(1 0 0);
+  --cf-foreground: oklch(0.145 0 0);
+  --cf-card: oklch(1 0 0);
+  --cf-card-foreground: oklch(0.145 0 0);
+  --cf-muted: oklch(0.94 0 0);
+  --cf-muted-foreground: oklch(0.556 0 0);
+  --cf-secondary: oklch(0.94 0 0);
+  --cf-secondary-foreground: oklch(0.205 0 0);
+  --cf-border: oklch(0.912 0 0);
+  --cf-input: oklch(0.912 0 0);
+  --cf-ring: var(--cf-primary);
+  --cf-destructive: oklch(0.577 0.245 27.325);
+  --cf-success: oklch(0.62 0.15 150);
+  --cf-warning: oklch(0.75 0.15 78);
+  /* Info stays a fixed blue, NOT the brand accent: a "payment detected" notice must
+     never inherit a red/alarming brand colour. Like success/warning, it holds across
+     light and dark without an override. */
+  --cf-info: oklch(0.62 0.15 255);
+  --cf-radius: 0.625rem;
+  --cf-font-sans:
+    system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  display: block;
+  color: var(--cf-foreground);
+  font-family: var(--cf-font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The base typography is repeated on the app root — an element inside the shadow tree,
+   which no outer-page selector can target. `:host` sits in the outer document, so a
+   merchant's `* { font-family: … !important }` overrides it and every descendant would
+   inherit the page font; declaring it here wins by being unreachable from outside. */
+.cf-app {
+  color: var(--cf-foreground);
+  font-family: var(--cf-font-sans);
+  line-height: 1.5;
+}
+
+:host([data-theme="dark"]) {
+  --cf-background: oklch(0.145 0 0);
+  --cf-foreground: oklch(0.985 0 0);
+  --cf-card: oklch(0.205 0 0);
+  --cf-card-foreground: oklch(0.985 0 0);
+  --cf-muted: oklch(0.269 0 0);
+  --cf-muted-foreground: oklch(0.708 0 0);
+  --cf-secondary: oklch(0.269 0 0);
+  --cf-secondary-foreground: oklch(0.985 0 0);
+  --cf-border: oklch(1 0 0 / 10%);
+  --cf-input: oklch(1 0 0 / 15%);
+}
+
+/*
+ * Terminal-state entrance animations. Plain CSS (not @theme utilities) so the
+ * keyframes live in the shadow stylesheet, where — unlike @property — they resolve.
+ * A single reduced-motion block drops all of it and leaves the check fully drawn.
+ */
+@keyframes cf-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes cf-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes cf-burst {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.cf-pop {
+  /* Ease-out, not an overshoot curve: the keyframe already peaks at scale(1.08), and
+     a bezier overshoot on top compounds into an unintendedly bouncy pop. */
+  animation: cf-pop 0.4s ease-out both;
+}
+
+.cf-check-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: cf-check-draw 0.4s 0.2s ease-out forwards;
+}
+
+.cf-burst {
+  animation: cf-burst 0.6s 0.15s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-pop,
+  .cf-check-draw,
+  .cf-burst {
+    animation: none;
+  }
+
+  .cf-check-draw {
+    stroke-dashoffset: 0;
+  }
+
+  .cf-burst {
+    display: none;
+  }
+}

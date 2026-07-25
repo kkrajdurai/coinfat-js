@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>coinfat-js dev harness</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 640px;
+        margin: 40px auto;
+        padding: 0 16px;
+        color: #241f21;
+      }
+      h2 {
+        margin-top: 32px;
+      }
+      code {
+        background: #f3f3f3;
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>coinfat-js dev harness</h1>
+    <p>
+      Append <code>?invoice=&lt;ulid&gt;</code> and run the backend at
+      <code>localhost:8000</code> to see a live checkout.
+    </p>
+
+    <h2>Inline (wide)</h2>
+    <div id="inline"></div>
+
+    <h2>Button → modal</h2>
+    <div id="button"></div>
+
+    <script type="module" src="/src/dev.tsx"></script>
+  </body>
+</html>

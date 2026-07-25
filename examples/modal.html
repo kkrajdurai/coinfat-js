@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Coinfat — modal checkout</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 2rem 1rem;
+        background: #fafafa;
+      }
+      main {
+        max-width: 40rem;
+        margin: 0 auto;
+      }
+      .row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-top: 1.5rem;
+      }
+      #open {
+        padding: 0.6rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Modal checkout</h1>
+      <p>Two ways to open the checkout in an overlay.</p>
+
+      <div class="row">
+        <!-- (1) Your own button, driving a modal session. -->
+        <button id="open">Checkout with your own button</button>
+
+        <!-- (2) Or the drop-in button — the SDK renders it and opens the modal. -->
+        <span id="dropin"></span>
+      </div>
+    </main>
+
+    <script src="../dist/coinfat.iife.js"></script>
+    <script>
+      // The ulid is minted server-side with your secret key (see inline.html).
+      const invoice = "REPLACE_WITH_INVOICE_ULID";
+
+      const coinfat = Coinfat({environment: "development"});
+
+      // (1) A modal session opened by your own button. `narrow` is the modal default.
+      const session = coinfat.checkout({
+        invoice,
+        display: "modal",
+        layout: "narrow",
+        onCompleted: (inv) => console.log("payment complete", inv.ulid)
+      });
+      document.getElementById("open").onclick = () => session.open();
+
+      // (2) The drop-in button renders itself and opens its own modal.
+      coinfat.button({
+        invoice,
+        mount: "#dropin",
+        label: "Pay with crypto"
+      });
+    </script>
+  </body>
+</html>
