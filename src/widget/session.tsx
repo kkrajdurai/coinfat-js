@@ -1,4 +1,5 @@
 import type {CheckoutApiClient} from "../core/api.js";
+import {BRAND} from "../core/brand.js";
 import {CheckoutController} from "../core/checkout.js";
 import type {
   CheckoutCallbacks,
@@ -93,7 +94,7 @@ export class CheckoutSession {
 
     if (!target) {
       throw new Error(
-        "coinfat: `mount` (element or selector) is required for an inline checkout"
+        `${BRAND.slug}: \`mount\` (element or selector) is required for an inline checkout`
       );
     }
 

@@ -15,6 +15,8 @@ export interface CheckoutStrings {
   close: string;
   /** Accessible name for the modal dialog. */
   dialogLabel: string;
+  /** Attribution badge on the modal backdrop. Only the lead-in — `BRAND.name` follows it untranslated. */
+  poweredBy: string;
 
   // Terminal states (completed / expired / canceled)
   completedMessage: string;

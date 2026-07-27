@@ -1,6 +1,8 @@
-import type {ComponentChildren} from "preact";
+import {Fragment, type ComponentChildren} from "preact";
 import {useEffect, useRef} from "preact/hooks";
+import {BRAND} from "../core/brand.js";
 import type {WidgetLayout} from "../core/options.js";
+import {BrandMarkIcon} from "./primitives.js";
 import {useStrings} from "./strings/context.js";
 
 export interface ModalProps {
@@ -104,31 +106,78 @@ export function Modal({children, onClose, layout}: ModalProps) {
     }
   };
 
+  // Click the dimmed area to close. Applied to each layer of the mask a click can
+  // actually land on; clicks on the card bubble up with a different target and are
+  // left alone.
+  const closeOnSelf = (event: MouseEvent) => {
+    if (event.target === event.currentTarget) onClose();
+  };
+
   return (
-    // The overlay itself scrolls (not the host page, which is locked), so a card
-    // taller than the viewport — a long coin list, an underpaid breakdown — stays
-    // fully reachable instead of clipping above the fold.
-    <div class="fixed inset-0 overflow-y-auto bg-black/50">
-      <div
-        // Click the dimmed area around the card (this wrapper) to close; clicks on
-        // the card bubble to a different target and are left alone.
-        class="flex min-h-full items-center justify-center p-4"
-        onClick={(event) => {
-          if (event.target === event.currentTarget) onClose();
-        }}>
+    <Fragment>
+      <div class="fixed inset-0 bg-black/50" onClick={closeOnSelf}>
         <div
-          ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label={strings.dialogLabel}
-          tabIndex={-1}
-          onKeyDown={onKeyDown}
-          class={`relative w-full outline-none ${
-            layout === "wide" ? "max-w-xl" : "max-w-sm"
-          }`}>
-          {children}
+          // The overlay itself scrolls (not the host page, which is locked), so a card
+          // taller than the viewport — a long coin list, an underpaid breakdown — stays
+          // fully reachable instead of clipping above the fold.
+          //
+          // It stops short of the mask's bottom edge to clear the attribution badge.
+          // Padding could not do this: the badge is anchored to the viewport while
+          // padding is anchored to the content, so once the card overflowed, the gutter
+          // scrolled out of view with it and the badge landed on top of the card —
+          // over an interactive control, which a `pointer-events-none` badge then let
+          // the payer click blind. Insetting the scroll viewport is the only version of
+          // the gutter that holds at every scroll position.
+          class="absolute inset-x-0 top-0 bottom-10 overflow-y-auto">
+          <div
+            class="flex min-h-full items-center justify-center p-4"
+            onClick={closeOnSelf}>
+            <div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label={strings.dialogLabel}
+              tabIndex={-1}
+              onKeyDown={onKeyDown}
+              class={`relative w-full outline-none ${
+                layout === "wide" ? "max-w-xl" : "max-w-sm"
+              }`}>
+              {children}
+            </div>
+          </div>
         </div>
       </div>
+
+      <PoweredBy />
+    </Fragment>
+  );
+}
+
+/**
+ * Attribution, pinned to the mask rather than the card: a sibling of the scroll
+ * container so it stays put while the overlay scrolls, and outside the dialog so the
+ * focus trap never has to account for it. `pointer-events-none` keeps the corner it
+ * occupies clickable-to-close like the rest of the mask — which is also why this is
+ * text, not a link. The mark is toned to white rather than brand orange so it reads as
+ * a footer credit and doesn't compete with the merchant's own accent inside the card.
+ */
+function PoweredBy() {
+  const strings = useStrings();
+
+  return (
+    <div
+      aria-hidden="true"
+      class="pointer-events-none fixed right-4 bottom-3.5 flex items-center gap-2 text-[11px] leading-none font-medium text-white/60 select-none">
+      <span>{strings.poweredBy}</span>
+      <span
+        // Mark and wordmark are one lockup, so they sit tighter to each other than the
+        // lead-in sits to them — at a single gap all three read as separate items.
+        class="flex items-center gap-1">
+        <BrandMarkIcon class="size-3 shrink-0 text-white/80" />
+        <span class="font-heading font-semibold tracking-tight text-white/85">
+          {BRAND.name}
+        </span>
+      </span>
     </div>
   );
 }

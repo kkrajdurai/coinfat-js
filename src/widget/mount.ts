@@ -1,4 +1,5 @@
 import {render, type ComponentChild} from "preact";
+import {BRAND} from "../core/brand.js";
 import type {CheckoutTheme, ThemeMode} from "../core/options.js";
 import themeCss from "../ui/theme.css?inline";
 
@@ -26,7 +27,9 @@ const SCOPED_THEME = themeCss.replaceAll(":root", ":host");
  */
 const AT_PROPERTY_RULE = /@property\s+--[\w-]+\s*\{[^}]*\}/g;
 const PROPERTY_RULES = (SCOPED_THEME.match(AT_PROPERTY_RULE) ?? []).join("\n");
-const PROPERTY_STYLE_ATTR = "data-coinfat-properties";
+/** The marker merchants can hang their own `[data-coinfat] { … }` rules off. */
+const HOST_ATTR = `data-${BRAND.slug}`;
+const PROPERTY_STYLE_ATTR = `${HOST_ATTR}-properties`;
 
 export interface ShadowMount {
   host: HTMLElement;
@@ -39,7 +42,7 @@ export function createShadowHost(options: CheckoutTheme = {}): ShadowMount {
   registerCustomProperties();
 
   const host = document.createElement("div");
-  host.setAttribute("data-coinfat", "");
+  host.setAttribute(HOST_ATTR, "");
 
   const shadow = host.attachShadow({mode: "open"});
 

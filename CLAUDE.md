@@ -57,6 +57,27 @@ These were decided deliberately. Do not revisit without a reason.
   Server-authored 4xx messages localise backend-side, not here. **Deferred:** bundling
   more locales, plural-rule machinery, RTL, and locale auto-negotiation — the seam
   exists, the packs do not.
+- **Brand spellings live in `core/brand.ts`.** `BRAND.name` is the wordmark (rendered
+  verbatim in every locale — a locale translates copy, it does not rename the company,
+  so it is deliberately _not_ in the string table). `BRAND.slug` is the machine form
+  behind `data-coinfat`, `data-coinfat-properties` and the `coinfat:` prefix on thrown
+  errors. The slug is **public surface** twice over — merchants target `[data-coinfat]`
+  from their own stylesheet, and the error prefix is what identifies the vendor in a
+  console shared with other scripts — so changing it is a breaking change. Its job here
+  is lockstep, not configurability. Two spellings it deliberately does **not** own: the
+  API hosts (a subdomain is a deployment choice, not a fact about the name — they stay
+  spelled out in `core/config.ts`) and `theme.css`'s `--cf-` prefix (CSS cannot import a
+  constant). The mark's path data in `primitives.tsx` is a third, since artwork is not a
+  string.
+- **Modal attribution badge.** "Powered by Coinfat", bottom-right of the mask. It sits
+  _outside_ the `role="dialog"` element and holds no focusables, so the focus trap is
+  unaffected, and it is `pointer-events-none` so its corner still closes the modal. Its
+  gutter is cut out of the **scroll viewport** (`bottom-10` on the `overflow-y-auto`
+  layer), never out of the content: the badge is viewport-anchored, so a content-anchored
+  gutter (bottom padding) scrolls away with a card that overflows and drops the badge on
+  top of an interactive control — invisible to click, because the badge eats nothing.
+  Guarded at 390x420 in `test/browser/isolation.spec.ts`; every taller viewport passes
+  either way, so do not "simplify" it back to padding.
 - **Out of v1:** realtime, framework wrappers (React/Vue), a deep
   appearance/customization API (only the accent + light/dark seam exists).
 
@@ -82,6 +103,7 @@ layouts. Follow the _pattern_ and the design tokens; invent the layout.
 src/
   core/            framework-neutral — no Preact imports
     types.ts       backend Checkout resource types (keep in sync with the backend)
+    brand.ts       BRAND = {name, slug} — the brand spellings that repeat across files
     config.ts      environment -> base URL
     api.ts         CheckoutApiClient (the transport seam) + its fetch impl, no deps
     checkout.ts    CheckoutController: fetch + 8s poll + select + requote + subscribe
@@ -92,9 +114,9 @@ src/
     PayPanel.tsx   the pay experience: QR, copy fields, rate lock, amounts
     CoinSelect.tsx coin + network picker -> controller.select (+ switch flow)
     Terminal.tsx   completed / expired / canceled terminal states
-    primitives.tsx Button, LinkButton, Spinner, CopyField, RateLock, SVG icons
+    primitives.tsx Button, LinkButton, Spinner, CopyField, RateLock, SVG icons, brand mark
     payment.ts     pay-panel arithmetic + notice logic (no Preact — unit-tested)
-    Modal.tsx      modal chrome (backdrop + centered card)
+    Modal.tsx      modal chrome (backdrop + centered card + attribution badge)
     useCheckout.ts Preact hook binding a component to a CheckoutController
     format.ts      display formatting for Money/Coin
     strings/       payer-facing copy: types + en table + resolve/context (i18n seam)
@@ -337,12 +359,14 @@ shadow-DOM mount with Tailwind isolation, inline + modal + drop-in-button presen
 the full checkout UI (`PayPanel`, `CoinSelect` coin/network picker with the
 post-detection coin lock, `Terminal` states), the i18n string seam (`en` only), theming
 (accent from `brand_color`/override + light/dark), modal a11y (focus trap, scroll lock,
-Escape), the three build formats (ESM, UMD, IIFE) with examples, and a Vitest + jsdom
-suite.
+Escape) and its attribution badge, the three build formats (ESM, UMD, IIFE) with
+examples, and a Vitest + jsdom suite.
 
 Published under MIT. `src/core/config.ts` maps production →
 `https://api.coinfat.com` and development → `https://test-api.coinfat.com`; the
 packaged script targets both, so a merchant's `environment` choice is the only switch.
 
-**Open:** a real cross-browser test (Playwright / vitest browser mode) for actual style
-isolation and the modal focus trap — jsdom verifies those only structurally.
+Style isolation, the focus trap and the badge's clearance — the three things jsdom
+cannot judge, having no CSS, no layout and no focus model — are covered by a hermetic
+Playwright suite (`npm run test:browser`, chromium/firefox/webkit). It reads
+`dist/coinfat.iife.js`, so **build first**.

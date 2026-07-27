@@ -1,11 +1,14 @@
 /**
- * Real-browser checks for the two guarantees jsdom cannot make good on, because jsdom
- * applies no CSS and has no focus model:
+ * Real-browser checks for the guarantees jsdom cannot make good on, because jsdom
+ * applies no CSS, does no layout and has no focus model:
  *
  *   1. Style isolation — the widget renders in a shadow root, so hostile host-page CSS
  *      must not reach in, and the widget's Tailwind reset must not leak out.
  *   2. The modal focus trap — real Tab / Shift+Tab must cycle within the dialog and
  *      never escape to the page, and focus must return to the opener on close.
+ *   3. The attribution badge must never paint over the card, at any viewport or scroll
+ *      position — it is `pointer-events-none`, so an overlap silently swallows clicks
+ *      aimed at whatever control it covers.
  *
  * The whole run is hermetic: the built IIFE bundle is served, and every checkout API
  * call is fulfilled from a sanitised fixture, so nothing touches the network. Build
@@ -196,4 +199,78 @@ test("the modal traps Tab focus and restores it to the opener on Escape", async 
   await expect(dialog).toHaveCount(0);
   // Focus handed back to the element that opened the modal.
   await expect(page.locator("#background-btn")).toBeFocused();
+});
+
+// A landscape phone: short enough that the pay panel overflows the viewport, which is
+// the only condition under which the badge and the card can meet. A content-anchored
+// gutter (bottom padding on the scrolling wrapper) passed at every taller size and
+// failed here, with the badge landing on the "Open in wallet" link.
+test.describe("the attribution badge", () => {
+  test.use({viewport: {width: 390, height: 420}});
+
+  test("never paints over the card, however the overlay is scrolled", async ({
+    page
+  }) => {
+    await page.evaluate(
+      ({api, ulid}) =>
+        window
+          .Coinfat({apiBase: api})
+          .checkout({invoice: ulid, display: "modal", layout: "narrow"})
+          .open(),
+      {api: API, ulid: ULID}
+    );
+
+    await page.getByRole("dialog").waitFor();
+    // Wait for the pay panel, not the skeleton — the skeleton is short enough to fit.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const sr = document.querySelector("[data-coinfat]")!.shadowRoot!;
+          return sr.querySelector(".overflow-y-auto")!.scrollHeight;
+        })
+      )
+      .toBeGreaterThan(420);
+
+    for (const scrollTop of [0, 9999]) {
+      const probe = await page.evaluate((top) => {
+        const sr = document.querySelector("[data-coinfat]")!.shadowRoot!;
+        const scroller = sr.querySelector(".overflow-y-auto")!;
+        scroller.scrollTop = top;
+
+        const badge = sr.querySelector<HTMLElement>('div[aria-hidden="true"]')!;
+        const b = badge.getBoundingClientRect();
+        const d = sr
+          .querySelector<HTMLElement>('[role="dialog"]')!
+          .getBoundingClientRect();
+        const s = scroller.getBoundingClientRect();
+
+        // The card's VISIBLE rect: its layout box clipped to the scroll viewport.
+        // Its unclipped box extends past the clip and would false-positive here.
+        const card = {
+          left: Math.max(d.left, s.left),
+          right: Math.min(d.right, s.right),
+          top: Math.max(d.top, s.top),
+          bottom: Math.min(d.bottom, s.bottom)
+        };
+
+        return {
+          overlaps: !(
+            b.right < card.left ||
+            b.left > card.right ||
+            b.bottom < card.top ||
+            b.top > card.bottom
+          ),
+          // What a click in the middle of the badge actually lands on.
+          hit: sr.elementFromPoint(
+            (b.left + b.right) / 2,
+            (b.top + b.bottom) / 2
+          )?.className
+        };
+      }, scrollTop);
+
+      expect(probe.overlaps).toBe(false);
+      // The mask, so the click closes the modal like any other part of it.
+      expect(probe.hit).toContain("fixed inset-0");
+    }
+  });
 });

@@ -11,6 +11,7 @@ export const en: CheckoutStrings = {
   },
   close: "Close",
   dialogLabel: "Checkout",
+  poweredBy: "Powered by",
 
   completedMessage: "Your payment was received. Thank you!",
   expiredMessage: "This payment link has expired.",

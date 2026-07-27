@@ -1,4 +1,5 @@
 import type {CheckoutApiClient} from "../core/api.js";
+import {BRAND} from "../core/brand.js";
 import type {CheckoutTheme} from "../core/options.js";
 import {resolveStrings} from "../ui/strings/index.js";
 import {
@@ -48,7 +49,7 @@ export class CheckoutButton {
 
     if (!target) {
       throw new Error(
-        "coinfat: `mount` (element or selector) is required for the button"
+        `${BRAND.slug}: \`mount\` (element or selector) is required for the button`
       );
     }
 

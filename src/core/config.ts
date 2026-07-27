@@ -8,6 +8,12 @@ export type Environment = "production" | "development";
 /**
  * No trailing slash, no `/api/v1` suffix — `resolveConfig` adds it. Production is
  * reserved: the host is not deployed yet, development is the live one.
+ *
+ * Spelled out rather than composed from the brand: a subdomain is a deployment
+ * choice, not a fact about the name. Staging could move to a different host entirely
+ * without the brand changing, and a rebrand would want these re-checked by hand
+ * anyway — so composition would buy nothing and cost the ability to read the real URL
+ * off the file that owns it.
  */
 const BASE_URLS: Record<Environment, string> = {
   production: "https://api.coinfat.com",

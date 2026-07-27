@@ -7,6 +7,7 @@
 import {render} from "preact";
 import {act} from "preact/test-utils";
 import {afterEach, describe, expect, it, vi} from "vitest";
+import {BRAND} from "../src/core/brand.js";
 import {Modal} from "../src/ui/Modal.js";
 
 let host: HTMLDivElement | null = null;
@@ -81,6 +82,26 @@ describe("Modal", () => {
     // A click on the dimmed wrapper around the card closes.
     dialog.parentElement!.click();
     expect(onClose).toHaveBeenCalledTimes(2);
+
+    // And so does the outer mask — the scroll region is inset from its bottom edge to
+    // clear the attribution badge, so that strip is clickable mask in its own right.
+    host!.querySelector<HTMLElement>(".fixed.inset-0")!.click();
+    expect(onClose).toHaveBeenCalledTimes(3);
+  });
+
+  it("credits Coinfat outside the dialog, without anything for the trap to catch", () => {
+    const dialog = open(() => {});
+    const badge = host!.querySelector<HTMLElement>('div[aria-hidden="true"]')!;
+
+    expect(badge.textContent).toContain(BRAND.name);
+    // Outside the dialog and inert: the focus trap enumerates focusables within
+    // dialogRef only, and `pointer-events-none` keeps the corner it covers clickable
+    // through to the mask beneath.
+    expect(dialog.contains(badge)).toBe(false);
+    expect(badge.querySelectorAll("a, button, input, [tabindex]")).toHaveLength(
+      0
+    );
+    expect(badge.className).toContain("pointer-events-none");
   });
 
   it("locks host-page scroll and restores it on close", () => {

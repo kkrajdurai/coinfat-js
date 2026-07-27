@@ -110,6 +110,27 @@ export function CircleXIcon() {
   );
 }
 
+/**
+ * The brand mark, ported from the frontend's `CoinfatIcon`. That one paints itself
+ * with a brand-orange gradient; here it is `currentColor` so the caller can tone it
+ * down — the attribution badge wants a muted mark, not a second accent competing with
+ * the merchant's own `--cf-primary`.
+ *
+ * The path is one of the two spellings `BRAND` cannot own: artwork is not a string.
+ * The other is `theme.css`'s `--cf-` prefix.
+ */
+export function BrandMarkIcon({class: className = ICON}: {class?: string}) {
+  return (
+    <svg
+      class={className}
+      viewBox="0 0 144.41 149.58"
+      fill="currentColor"
+      aria-hidden="true">
+      <path d="m144.39,19.54c.91,4.54-29.89,14.55-68.8,22.36C36.68,49.7,4.4,52.35,3.49,47.8L.02,30.49c-.91-4.54,29.89-14.55,68.8-22.36C107.73.33,140.01-2.32,140.92,2.22l3.47,17.31Zm-73.25,46.79C31.85,66.32,0,70.08,0,74.71v17.66C0,97,31.85,100.75,71.14,100.75s71.14-3.75,71.14-8.39v-17.66c0-4.63-31.85-8.39-71.14-8.39ZM1.88,117.25c-2.5,9.92-2.5,20.3,0,30.21,10.97,2.81,20.32,2.81,31.29,0,2.5-9.92,2.5-20.3,0-30.21-10.97-2.81-20.32-2.81-31.29,0Z" />
+    </svg>
+  );
+}
+
 const BUTTON_BASE =
   "inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60";
 
