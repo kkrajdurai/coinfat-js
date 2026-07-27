@@ -1,19 +1,14 @@
 /**
- * String tables for the checkout. `en` is the only locale bundled today; every
- * table falls back to it per-key, so a partial one never renders `undefined`.
+ * String tables for the checkout. `en` is the only locale bundled today; every table
+ * falls back to it per-key, so a partial one never renders `undefined`.
  *
- * ── Adding a locale ──────────────────────────────────────────────────────────
- *  1. Copy `en.ts` to e.g. `fr.ts` and translate every value. Interpolated strings
- *     are functions, so the locale handles its own word order and plurals (reach
- *     for `Intl.PluralRules` inside the function where a language needs it).
- *  2. Register it in `LOCALES` below: `{en, fr}`.
- *  3. Done — `coinfat.checkout({invoice, locale: "fr"})` now resolves to it, and
- *     `Intl` number/currency formatting follows the same `locale`.
+ * Adding a locale: copy `en.ts` to e.g. `fr.ts`, translate every value (interpolated
+ * strings are functions, so the locale owns its word order and plurals), and register
+ * it in `LOCALES` below. `locale: "fr"` then resolves to it, and `Intl` formatting
+ * follows the same tag.
  *
- * A merchant can also translate WITHOUT a rebuild by passing `strings`, a partial
- * override merged over the resolved locale:
- *     coinfat.checkout({invoice, strings: {sendExactly: "Envoyer exactement"}})
- * ─────────────────────────────────────────────────────────────────────────────
+ * A merchant can also translate without a rebuild by passing `strings`, a partial
+ * override merged over the resolved locale.
  */
 import type {PaymentNotice} from "../payment.js";
 import {en} from "./en.js";
@@ -32,18 +27,17 @@ export interface ResolvedI18n {
 }
 
 /**
- * Resolve the copy for a checkout. The table is chosen by `locale` — exact tag,
- * then its base language (`fr-CA` → `fr`), then English — and a merchant `overrides`
- * partial is layered on top. The normalised tag is passed through for `Intl`, which
- * knows far more locales than we bundle tables for, so amounts can format in French
- * even while the copy falls back to English.
+ * Resolve the copy for a checkout. The table is chosen by `locale` — exact tag, then
+ * base language (`fr-CA` → `fr`), then English — with `overrides` layered on top. The
+ * normalised tag passes through for `Intl`, which knows far more locales than we bundle
+ * tables for, so amounts can format in French while the copy falls back to English.
  */
 export function resolveStrings(
   locale?: string,
   overrides?: CheckoutStringsOverride
 ): ResolvedI18n {
-  // Blank/whitespace normalises to undefined: an empty string survives negotiation
-  // but makes `Intl.NumberFormat("")` throw, silently dropping the currency symbol.
+  // Blank/whitespace normalises to undefined: an empty string survives negotiation but
+  // makes `Intl.NumberFormat("")` throw, silently dropping the currency symbol.
   const normalized = locale?.trim() || undefined;
   const tag = normalized?.toLowerCase();
   const base = tag?.split("-")[0];
@@ -56,8 +50,8 @@ export function resolveStrings(
     return {locale: normalized, strings: table};
   }
 
-  // Drop keys an untyped caller set to `undefined`: a spread would blank them, and
-  // the interpolation keys are functions the view then calls — `undefined(...)` throws.
+  // Drop keys an untyped caller set to `undefined`: a spread would blank them, and the
+  // interpolation keys are functions the view then calls — `undefined(...)` throws.
   const defined = Object.fromEntries(
     Object.entries(overrides).filter(([, value]) => value !== undefined)
   ) as CheckoutStringsOverride;

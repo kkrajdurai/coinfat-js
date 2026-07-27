@@ -1,7 +1,7 @@
 /**
- * Display formatting for the backend's money/coin shapes. DISPLAY-only — the
- * backend is the authority on amounts, which is what makes `Number()` safe here and
- * a big-decimal dependency unnecessary.
+ * Display formatting for the backend's money/coin shapes. DISPLAY-only — the backend
+ * is the authority on amounts, which is what makes `Number()` safe here and a
+ * big-decimal dependency unnecessary.
  */
 
 import type {Coin, Money} from "../core/types.js";
@@ -21,9 +21,8 @@ export function formatMoney(money: Money, locale?: string): string {
 }
 
 /**
- * Crypto amounts, unlike the fiat `formatMoney`, take NO locale: the backend string
- * is exact and rendered verbatim (see ui/payment.ts), and `Intl` grouping separators
- * would corrupt an address-bound deposit amount. Only the symbol is appended.
+ * Crypto amounts take NO locale, unlike the fiat `formatMoney`: the backend string is
+ * exact, and `Intl` grouping separators would corrupt a deposit amount. Symbol only.
  */
 export function formatCoin(coin: Coin): string {
   return `${coin.amount} ${coin.symbol}`;

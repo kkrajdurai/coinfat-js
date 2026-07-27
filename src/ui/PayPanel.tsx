@@ -1,10 +1,8 @@
 /**
- * The pay experience: what a payer sees once a coin is selected. Everything here
- * comes from `checkout.show` — no extra requests.
- *
- * The layout is container-driven: `@md:` resolves against the `@container` on the
- * checkout root, so it splits or stacks by the merchant's slot width without the
- * SDK measuring anything.
+ * The pay experience: what a payer sees once a coin is selected. Everything comes from
+ * `checkout.show` — no extra requests. The layout is container-driven: `@md:` resolves
+ * against the `@container` on the checkout root, so it splits or stacks by the
+ * merchant's slot width without the SDK measuring anything.
  */
 
 import {useEffect, useState} from "preact/hooks";
@@ -100,10 +98,9 @@ export function PayPanel({
       </div>
 
       <div
-        // Two columns only when the merchant asked for `wide` AND the container is
-        // past @md (28rem). `narrow` stays single-column even in a roomy slot, and a
-        // `narrow` modal (max-w-sm, 24rem) therefore never splits — a `wide` one
-        // (max-w-xl) clears the threshold and does.
+        // Two columns only when the merchant asked for `wide` AND the container is past
+        // @md (28rem). A `narrow` modal (max-w-sm, 24rem) therefore never splits; a
+        // `wide` one (max-w-xl) clears the threshold and does.
         class={
           layout === "wide"
             ? "grid grid-cols-1 gap-4 @md:grid-cols-[8rem_1fr] @md:gap-5"
@@ -115,8 +112,8 @@ export function PayPanel({
               src={payment.qr_code_url}
               alt={strings.qrAlt(amounts.symbol)}
               class="size-32 rounded-xl border border-border bg-white p-1.5"
-              // Third-party image: a broken-image glyph as the panel's focal point
-              // is worse than no QR at all.
+              // Third-party image: a broken-image glyph as the panel's focal point is
+              // worse than no QR at all.
               onError={(event) => {
                 (event.currentTarget as HTMLImageElement).style.display =
                   "none";
@@ -150,8 +147,8 @@ export function PayPanel({
               </span>
             </CopyField>
           ) : (
-            // Null address means the network's provider has no address
-            // provisioned — a real failure, not "no coin picked yet".
+            // A null address means the provider has none provisioned — a real
+            // failure, not "no coin picked yet".
             <p class="rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {strings.noDepositAddress}
             </p>
@@ -159,8 +156,7 @@ export function PayPanel({
 
           {payment.deposit_uri ? (
             // A payer on a phone cannot scan a QR on that same phone. The
-            // BIP21/EIP-681 URI hands straight off to an installed wallet,
-            // carrying the exact amount at full chain precision.
+            // BIP21/EIP-681 URI hands straight off to an installed wallet.
             <a
               href={payment.deposit_uri}
               class="inline-flex w-full items-center justify-center rounded-xl border border-border px-3 py-2 text-xs font-medium transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -169,8 +165,8 @@ export function PayPanel({
           ) : null}
 
           <p
-            // Mounted unconditionally, only the text swapping: a live region
-            // inserted with its text already in place is not announced.
+            // Mounted unconditionally, only the text swapping: a live region inserted
+            // with its text already in place is not announced.
             // https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Guides/Live_regions
             role="status"
             class={
@@ -184,8 +180,8 @@ export function PayPanel({
           <PaymentSummary payment={payment} />
 
           {!detected ? (
-            // Once a transfer is detected the quote is settled: re-quoting under
-            // the payer would change an amount they have already sent.
+            // Once a transfer is detected the quote is settled: re-quoting would
+            // change an amount the payer has already sent.
             <>
               <RateLock
                 key={payment.rate_expires_at}
@@ -193,8 +189,8 @@ export function PayPanel({
                 onElapsed={handleElapsed}
               />
               {expired ? (
-                // Only once the lock has lapsed: while the amount on screen is
-                // still good, a refresh button next to it invites second-guessing.
+                // Only once the lock has lapsed: while the amount on screen is still
+                // good, a refresh button next to it invites second-guessing.
                 <Button variant="outline" onClick={requote} busy={mutating}>
                   {mutating ? null : <RefreshIcon />}
                   {strings.refreshRate}
@@ -250,8 +246,8 @@ function PaymentSummary({payment}: {payment: StoreInvoicePayment}) {
   if (Number(overpaid) > 0) {
     rows.push({
       label: strings.summaryOverpaid,
-      // Semantic, not the brand accent: an overpayment is settled-and-then-some, and
-      // its notice is `success` — a red-brand store shouldn't render it as alarming.
+      // Semantic, not the brand accent: an overpayment is settled-and-then-some, and a
+      // red-brand store shouldn't render it as alarming.
       value: `${overpaid} ${symbol}`,
       tone: "text-success"
     });
@@ -288,8 +284,8 @@ function ListeningIndicator({detected}: {detected: boolean}) {
     <div class="flex items-center justify-center gap-2 text-xs text-muted-foreground">
       <span class="relative flex size-2">
         <span
-          // motion-reduce: a permanent ping carries no information and is
-          // exactly what triggers vestibular discomfort.
+          // A permanent ping carries no information and is exactly what triggers
+          // vestibular discomfort.
           class="absolute inline-flex size-full animate-ping rounded-full bg-success/70 motion-reduce:hidden"
         />
         <span class="relative inline-flex size-2 rounded-full bg-success" />

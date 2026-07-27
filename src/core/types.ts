@@ -9,14 +9,13 @@ export interface Money {
   amount: string;
   /** ISO currency code, e.g. "USD". */
   currency: string;
-  /** Number of fraction digits to render, e.g. 2. */
+  /** Fraction digits to render. */
   scale: number;
 }
 
 /**
- * Crypto amount from the backend's `JsonSerialize::coin()`. No `scale`, unlike
- * `Money`. The published schema is stale — it omits the `symbol` the API does send,
- * so this type follows the response, not the schema.
+ * Crypto amount from the backend's `JsonSerialize::coin()`. The published schema is
+ * stale — it omits the `symbol` the API does send, so this type follows the response.
  */
 export interface Coin {
   /** Decimal string with trailing zeros stripped, already at the wallet's precision. */
@@ -57,7 +56,7 @@ export interface WalletNetwork {
   wallet: Wallet;
   /**
    * The chain's native coin, which the execution (gas) fee is paid in. Null where
-   * there is no separate fee coin. Read the network's icon/symbol off
+   * there is no separate fee coin. Take the network's icon/symbol from
    * `execution_fee_wallet ?? wallet`: USDT-on-Tron is marked TRX, not USDT.
    */
   execution_fee_wallet: Wallet | null;
@@ -120,8 +119,8 @@ export interface StoreInvoicePayment {
   /**
    * Still owed, quoted by the backend so the client never re-derives it from
    * `expected − received`. Floored at zero once the received value meets the
-   * completion threshold — a payment settled within the tolerance band reads as
-   * nothing owed. Sits beside `overpaid_value`, the mirror quantity.
+   * completion threshold, so a payment settled within the tolerance band owes
+   * nothing.
    */
   remaining_value: Coin;
   detected_at: string | null;

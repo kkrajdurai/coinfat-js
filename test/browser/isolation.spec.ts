@@ -1,18 +1,11 @@
 /**
- * Real-browser checks for the guarantees jsdom cannot make good on, because jsdom
- * applies no CSS, does no layout and has no focus model:
+ * The three guarantees jsdom cannot judge, having no CSS, no layout and no focus model:
+ * style isolation both ways across the shadow boundary, the modal's Tab focus trap, and
+ * the attribution badge never painting over the card (it is `pointer-events-none`, so
+ * an overlap silently swallows clicks on whatever it covers).
  *
- *   1. Style isolation — the widget renders in a shadow root, so hostile host-page CSS
- *      must not reach in, and the widget's Tailwind reset must not leak out.
- *   2. The modal focus trap — real Tab / Shift+Tab must cycle within the dialog and
- *      never escape to the page, and focus must return to the opener on close.
- *   3. The attribution badge must never paint over the card, at any viewport or scroll
- *      position — it is `pointer-events-none`, so an overlap silently swallows clicks
- *      aimed at whatever control it covers.
- *
- * The whole run is hermetic: the built IIFE bundle is served, and every checkout API
- * call is fulfilled from a sanitised fixture, so nothing touches the network. Build
- * first (`npm run build`) — the spec loads `dist/coinfat.iife.js`.
+ * Hermetic: the built IIFE bundle is served and every API call is fulfilled from a
+ * fixture. Build first — the spec loads `dist/coinfat.iife.js`.
  */
 
 import {readFileSync} from "node:fs";
@@ -30,15 +23,14 @@ const fixtures = JSON.parse(
 ) as {invoice: unknown; wallets: unknown; ulid: string};
 
 const ULID = fixtures.ulid;
-// A fabricated origin: the page, the bundle and the API all resolve to it through
-// route(), so every request is same-origin and no CORS handshake is needed.
+// A fabricated origin: the page, the bundle and the API all route to it, so every
+// request is same-origin and no CORS handshake is needed.
 const ORIGIN = "http://coinfat.test";
 const API = `${ORIGIN}/api/v1`;
 
-// Host page with deliberately hostile CSS. `*{color:red !important}` and the lime
-// button background are the isolation adversary: neither may show up inside the widget.
-// The <h1> is the leak-out probe — its default margin must survive, i.e. the widget's
-// preflight (which zeroes h1 margins) must not have escaped the shadow root.
+// Deliberately hostile host CSS: the red text, Comic Sans and lime button must not
+// show up inside the widget. The <h1> is the leak-out probe — its default margin must
+// survive, i.e. the widget's preflight (which zeroes h1 margins) stayed in the shadow.
 const HOST_HTML = `<!doctype html><html><head><meta charset="utf-8"><style>
   *, *::before, *::after { color: rgb(255, 0, 0) !important;
                            font-family: "Comic Sans MS", cursive !important; }
@@ -67,7 +59,6 @@ async function stubEnvironment(page: Page): Promise<void> {
     })
   );
 
-  // GET show (also served on each 8s poll), GET wallets, POST select/requote.
   await page.route(`**/checkout/${ULID}/wallets`, (route) =>
     json(route, fixtures.wallets)
   );
@@ -92,8 +83,8 @@ test.beforeEach(async ({page}) => {
 test("host-page CSS cannot pierce the widget, and the widget's reset cannot leak out", async ({
   page
 }) => {
-  // The drop-in button is the most deterministic isolation subject: one `bg-primary`
-  // button (the store's brand blue via brand_color) with `text-primary-foreground`.
+  // The drop-in button is the most deterministic subject: one `bg-primary` button with
+  // `text-primary-foreground`.
   await page.evaluate(
     ({api, ulid}) =>
       window
@@ -112,19 +103,16 @@ test("host-page CSS cannot pierce the widget, and the widget's reset cannot leak
     return {color: s.color, background: s.backgroundColor, font: s.fontFamily};
   });
 
-  // Inbound: the host's red text, lime background and Comic Sans stopped at the boundary.
+  // Inbound: the host's styles stopped at the boundary.
   expect(style.color).not.toBe("rgb(255, 0, 0)");
   expect(style.background).not.toBe("rgb(0, 255, 0)");
   expect(style.font.toLowerCase()).not.toContain("comic sans");
-  // Positive: the widget painted a deliberate, opaque fill of its own — not transparent,
-  // so the host page shows through nothing. The exact brand value is browser-colour-
-  // managed and applied asynchronously, so it is asserted in the jsdom accent tests, not
-  // pinned to an rgb triple here.
+  // And the widget painted an opaque fill of its own. Not pinned to an rgb triple: the
+  // brand value is colour-managed and applied async, so the jsdom accent tests own it.
   expect(style.background).not.toBe("rgba(0, 0, 0, 0)");
   expect(style.background).not.toBe("transparent");
 
-  // Outbound: the light-DOM <h1> keeps its default margin. Tailwind's preflight would
-  // have zeroed it; a non-zero margin proves the reset stayed inside the shadow root.
+  // Outbound: Tailwind's preflight would have zeroed the light-DOM <h1>'s margin.
   const h1MarginTop = await page
     .locator("#probe-h1")
     .evaluate((el) => getComputedStyle(el).marginTop);
@@ -135,9 +123,8 @@ test("the modal traps Tab focus and restores it to the opener on Escape", async 
   page,
   browserName
 }) => {
-  // WebKit under automation does not move Tab focus to buttons/non-input controls
-  // (it mirrors Safari's default "Full Keyboard Access" off, which cannot be toggled
-  // headlessly), so Tab traversal cannot be exercised there. Chromium + Firefox cover it.
+  // WebKit under automation does not Tab-focus non-input controls (Safari's "Full
+  // Keyboard Access" default, untoggleable headlessly). Chromium + Firefox cover it.
   test.skip(
     browserName === "webkit",
     "WebKit automation does not Tab-focus non-input controls"
@@ -160,8 +147,8 @@ test("the modal traps Tab focus and restores it to the opener on Escape", async 
   const dialog = page.getByRole("dialog");
   await dialog.waitFor();
 
-  // Wait for the pay panel to render real focusables (copy fields, change-coin), not
-  // just the loading skeleton — the trap is only meaningful once there is more than one.
+  // Wait for the pay panel's real focusables, not the skeleton — the trap is only
+  // meaningful once there is more than one.
   await expect
     .poll(() =>
       dialog.evaluate(
@@ -183,13 +170,11 @@ test("the modal traps Tab focus and restores it to the opener on Escape", async 
       return !el || el.getRootNode() === document;
     });
 
-  // Tab well past the number of focusables: focus must stay inside the dialog the whole
-  // way round, never reaching #background-btn or the body.
+  // Tab well past the number of focusables, then back through the wrap point.
   for (let i = 0; i < 12; i++) {
     await page.keyboard.press("Tab");
     expect(await deepActiveEscaped()).toBe(false);
   }
-  // And backwards, through the wrap point.
   for (let i = 0; i < 12; i++) {
     await page.keyboard.press("Shift+Tab");
     expect(await deepActiveEscaped()).toBe(false);
@@ -197,7 +182,6 @@ test("the modal traps Tab focus and restores it to the opener on Escape", async 
 
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  // Focus handed back to the element that opened the modal.
   await expect(page.locator("#background-btn")).toBeFocused();
 });
 

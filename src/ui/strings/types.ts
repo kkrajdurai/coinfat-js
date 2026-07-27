@@ -1,13 +1,13 @@
 import type {StoreInvoiceStatus} from "../../core/types.js";
 
 /**
- * Every payer-facing string the SDK itself authors. Interpolated ones are
- * FUNCTIONS, not templates with placeholders, so a locale owns its own grammar —
- * word order, and pluralisation via `Intl.PluralRules` where a language needs it.
- * The SDK never concatenates on a locale's behalf.
+ * Every payer-facing string the SDK itself authors. Interpolated ones are FUNCTIONS,
+ * not placeholder templates, so a locale owns its grammar — word order, and plurals via
+ * `Intl.PluralRules` where a language needs it. The SDK never concatenates on a
+ * locale's behalf.
  *
- * Server-authored text is deliberately absent: a 4xx `error.message` is written by
- * the backend and localises there, not here.
+ * Server-authored text is deliberately absent: a 4xx `error.message` localises in the
+ * backend.
  */
 export interface CheckoutStrings {
   amountDue: string;
@@ -15,7 +15,7 @@ export interface CheckoutStrings {
   close: string;
   /** Accessible name for the modal dialog. */
   dialogLabel: string;
-  /** Attribution badge on the modal backdrop. Only the lead-in — `BRAND.name` follows it untranslated. */
+  /** The lead-in only; `BRAND.name` follows it untranslated. */
   poweredBy: string;
 
   // Terminal states (completed / expired / canceled)
@@ -74,9 +74,9 @@ export interface CheckoutStrings {
 }
 
 /**
- * A merchant's partial override, merged over the resolved locale. Every top-level
- * key is optional, and `status` may itself be partial — the resolver deep-merges it,
- * so one status word can be translated without supplying the other three.
+ * A merchant's partial override, merged over the resolved locale. `status` may itself
+ * be partial — the resolver deep-merges it, so one status word can be translated
+ * without supplying the other three.
  */
 export type CheckoutStringsOverride = Partial<
   Omit<CheckoutStrings, "status">

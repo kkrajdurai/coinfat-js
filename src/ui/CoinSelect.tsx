@@ -1,15 +1,13 @@
 /**
- * Coin + network selection: the payer picks a coin, then a network, then confirms —
- * which POSTs the network id to `controller.select`. It serves two entry points: the
- * no-coin-yet state, and switching coins from the pay panel (with a Cancel).
+ * Coin + network selection: pick a coin, then a network, then confirm — which POSTs
+ * the network id to `controller.select`. Two entry points: the no-coin-yet state, and
+ * switching coins from the pay panel (with a Cancel).
  *
- * The picker's data is the wallets endpoint's embedded `networks[]` (fetched once),
- * NOT a per-coin request. A coin with a sole network, or a sole payable coin, is
- * auto-selected so the common single-option invoice is one tap.
+ * The data is the wallets endpoint's embedded `networks[]` (fetched once), NOT a
+ * per-coin request. A sole coin, or a coin's sole network, auto-selects.
  *
- * Post-detection there is no picker at all — the pay panel hides the change-coin
- * affordance once a transfer lands (the backend would 422 `coin_locked` anyway), so
- * this component is only ever reached while a coin change is still permitted.
+ * Post-detection there is no picker at all — the pay panel drops the change-coin
+ * affordance once a transfer lands (the backend would 422 `coin_locked` anyway).
  */
 
 import {useEffect, useId, useMemo, useState} from "preact/hooks";
@@ -37,8 +35,8 @@ export interface CoinSwitch {
 }
 
 /**
- * The coin-switch state machine that routes between the picker and the pay panel.
- * Kept out of the view so the interdependent flags read as one unit.
+ * The state machine routing between the picker and the pay panel. Kept out of the view
+ * so the interdependent flags read as one unit.
  */
 export function useCoinSwitch(
   payment: StoreInvoicePayment | null,
@@ -47,23 +45,23 @@ export function useCoinSwitch(
   const detected = !!payment?.detected_at;
   const [switching, setSwitching] = useState(false);
 
-  // Close the switcher once the selected network actually changes — the switch
-  // landed (or the first pick did). Mirrors hiding it the moment a payment exists.
+  // Close the switcher once the selected network actually changes — the switch (or
+  // the first pick) landed.
   const selectedNetworkId = payment?.wallet_network?.id;
   useEffect(() => {
     setSwitching(false);
   }, [selectedNetworkId]);
 
-  // Only offer the switch when there is genuinely another option — a second coin, or
-  // a second network on the only coin. A lone coin+network has nothing to change to.
+  // Only offer the switch when another option exists — a second coin, or a second
+  // network on the only coin.
   const coins = wallets ?? [];
   const soleCoinNetworks = coins[0]?.networks ?? [];
   const hasAlternatives = coins.length > 1 || soleCoinNetworks.length > 1;
 
   return {
-    // No coin yet → pick one. Switching (only before detection) → the same picker
-    // with a Cancel. Detection forces the pay panel back regardless of `switching`,
-    // which is also what makes a stale coin-change race resolve to the confirming view.
+    // No coin yet → pick one. Switching → the same picker with a Cancel. Detection
+    // forces the pay panel back regardless of `switching`, which is what makes a
+    // stale coin-change race resolve to the confirming view.
     picking: !payment || (switching && !detected),
     canSwitch: !detected && hasAlternatives,
     selectedNetworkId,
@@ -102,11 +100,10 @@ function optionClass(selected: boolean): string {
 }
 
 /**
- * Both pickers are single-select, so each group is a `radiogroup` of `radio`s (not
- * toggle buttons — `aria-pressed` would misreport them as independent). They stay
- * individually tab-focusable rather than adopting the APG roving-tabindex + arrow-key
- * pattern: for a compact list that is enough to announce "checked, N of M", and it
- * matches the reference's plain-button approach.
+ * Both pickers are single-select, so each group is a `radiogroup` of `radio`s — not
+ * toggle buttons, whose `aria-pressed` would misreport them as independent. They stay
+ * individually tab-focusable rather than adopting APG's roving tabindex: for a compact
+ * list that is enough to announce "checked, N of M".
  */
 
 /** A third-party icon 404 must not leave a broken-image glyph in the picker. */
@@ -177,8 +174,8 @@ function Picker({
   const coin = wallets.find((wallet) => wallet.id === coinId) ?? null;
   const networks = coin?.networks ?? [];
 
-  // Derive rather than reset-on-change: the explicit pick if it still belongs to the
-  // open coin, else the coin's sole network (or none). No effect, so no frame where a
+  // Derived, not reset-on-change: the explicit pick if it still belongs to the open
+  // coin, else the coin's sole network. No effect, so there is no frame in which a
   // stale network from the previous coin is live and postable.
   const activeNetworkId = networks.some((network) => network.id === networkId)
     ? networkId
@@ -264,12 +261,10 @@ function CoinPicker({
       <div
         role="radiogroup"
         aria-labelledby={labelId}
-        // The row height is pinned and the cap is 3.5 rows (3.5 × 4.875rem + 3 ×
-        // 0.5rem gap), so a longer list always leaves a clean HALF row peeking —
-        // a deliberate "more below" cue. The previous arbitrary cap left ~74% of a
-        // row showing, which reads as a clipped grid rather than a scrollable one;
-        // an exact 3-row cap removed the cue entirely. `max-height` is only a cap,
-        // so a list that fits (≤3 rows) still renders flush with no scrollbar.
+        // Row height is pinned and the cap is exactly 3.5 rows (3.5 × 4.875rem + 3 ×
+        // 0.5rem gap), so a longer list always leaves a clean HALF row peeking as a
+        // "more below" cue. An arbitrary cap reads as a clipped grid instead; a whole-
+        // row cap removes the cue. A list that fits still renders flush, no scrollbar.
         class="grid max-h-[18.5625rem] auto-rows-[minmax(4.875rem,auto)] grid-cols-2 gap-2 overflow-y-auto @xs:grid-cols-3">
         {shown.map((wallet) => {
           const selected = wallet.id === selectedId;
@@ -328,8 +323,7 @@ function NetworkPicker({
           {networks.map((network) => {
             const selected = network.id === selectedId;
             // The network's mark is its chain's native coin, not the token —
-            // USDT-on-Tron shows the TRX icon. Guarded: the nested wallet is only
-            // present when the endpoint loaded it.
+            // USDT-on-Tron shows TRX. Guarded: the nested wallet may not be loaded.
             const logo = network.execution_fee_wallet ?? network.wallet;
 
             return (

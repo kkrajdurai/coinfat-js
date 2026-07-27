@@ -1,7 +1,6 @@
 /**
- * Render smoke tests for the pay panel. The arithmetic is covered in
- * payment.test.ts; these catch the component itself falling over — a null the JSX
- * did not guard, or a required field quietly rendering as nothing.
+ * Render smoke tests for the pay panel — a null the JSX did not guard, a required field
+ * quietly rendering as nothing. The arithmetic is payment.test.ts.
  */
 
 import {render} from "preact";
@@ -88,8 +87,7 @@ describe("PayPanel", () => {
       'img[src="https://cdn.test/qr.png"]'
     );
     expect(qr).not.toBeNull();
-    // The primary affordance on mobile; with no alt text it is invisible to a
-    // screen reader.
+    // With no alt text the QR is invisible to a screen reader.
     expect(qr?.alt).toContain("BTC");
   });
 
@@ -98,8 +96,8 @@ describe("PayPanel", () => {
   });
 
   it("survives a payment with no network and no icon", () => {
-    // wallet_network is nullable on the resource; the chip must not print
-    // "undefined" or throw reading `.name` off null.
+    // wallet_network is nullable; the chip must not print "undefined" or throw
+    // reading `.name` off null.
     const el = mount(
       payment({
         wallet_network: null,
@@ -113,8 +111,8 @@ describe("PayPanel", () => {
   });
 
   it("explains a missing deposit address instead of showing an empty box", () => {
-    // address/deposit_uri/qr_code_url go null together when the network's provider
-    // has no address provisioned — a real failure, not "no coin picked yet".
+    // The three go null together when the provider has no address provisioned — a
+    // real failure, not "no coin picked yet".
     const el = mount(
       payment({address: null, deposit_uri: null, qr_code_url: null})
     );
@@ -132,8 +130,7 @@ describe("PayPanel", () => {
       })
     );
 
-    // Re-quoting under a payer who has already sent funds would move the amount
-    // they were quoted.
+    // Re-quoting would move the amount a payer has already sent against.
     expect(el.textContent).not.toContain("Amount locked");
     expect(el.textContent).not.toContain("Refresh rate");
     expect(el.textContent).toContain("Confirming your payment");
@@ -165,7 +162,6 @@ describe("PayPanel", () => {
     const grid = (el: HTMLDivElement) =>
       el.querySelector<HTMLElement>('[class*="grid-cols-1"]')!.className;
 
-    // Wide allows the @md split; narrow stays single-column even in a roomy slot.
     expect(grid(mount(payment(), undefined, "wide"))).toContain(
       "@md:grid-cols"
     );

@@ -1,7 +1,4 @@
-/**
- * Merchant lifecycle callbacks. They live on the controller rather than the view
- * precisely so a modal reopen cannot replay them.
- */
+/** Merchant lifecycle callbacks, and their once-per-invoice guarantee. */
 
 import {describe, expect, it} from "vitest";
 import {CheckoutController} from "../src/core/checkout.js";

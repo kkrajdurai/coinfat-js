@@ -1,9 +1,7 @@
 /**
- * @coinfat/checkout — embedded crypto checkout SDK.
- *
- * A merchant creates the invoice server-side with their secret API key and passes
- * the ulid to the browser. This SDK only ever talks to the public, bearer-less
- * `/api/v1/checkout` endpoints.
+ * @coinfat/checkout — embedded crypto checkout SDK. The merchant creates the invoice
+ * server-side with their secret API key and passes the ulid to the browser; this SDK
+ * only ever talks to the public, bearer-less `/api/v1/checkout` endpoints.
  */
 
 import {CheckoutApi} from "./core/api.js";

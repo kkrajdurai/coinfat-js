@@ -18,10 +18,7 @@ export interface CheckoutTheme {
   mode?: ThemeMode;
 }
 
-/**
- * Lifecycle callbacks. Each receives the current invoice (except onError).
- * Fired once per transition.
- */
+/** Lifecycle callbacks, each fired once per transition. */
 export interface CheckoutCallbacks {
   /** The invoice loaded for the first time. */
   onReady?: (invoice: Checkout) => void;
@@ -29,11 +26,8 @@ export interface CheckoutCallbacks {
   onCoinSelected?: (invoice: Checkout) => void;
   /** An on-chain payment was detected and is confirming. */
   onPaymentDetected?: (invoice: Checkout) => void;
-  /** The invoice completed. */
   onCompleted?: (invoice: Checkout) => void;
-  /** The invoice expired. */
   onExpired?: (invoice: Checkout) => void;
-  /** The invoice was canceled. */
   onCanceled?: (invoice: Checkout) => void;
   /** A load/select/requote failed. */
   onError?: (error: Error) => void;

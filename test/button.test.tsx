@@ -1,7 +1,7 @@
 /**
- * The drop-in button matches the store's brand_color. It paints before the modal
- * fetches anything, so on its own it can't know the colour — it does a one-shot
- * `show` and recolours, unless the merchant fixed the accent (then no fetch).
+ * The drop-in button matches the store's brand_color: it paints before the modal
+ * fetches anything, so it does a one-shot `show` and recolours — unless the merchant
+ * fixed the accent, in which case it never fetches.
  */
 
 import {afterEach, describe, expect, it} from "vitest";
@@ -43,8 +43,8 @@ describe("CheckoutButton", () => {
 
   it("lets a checkout-level theme.accent win too, matching the modal it opens", async () => {
     // `openCheckout` resolves the modal theme as `checkout?.theme ?? theme`, so a
-    // checkout-level accent must claim the button as well — otherwise a
-    // brand-coloured button opens a merchant-accented modal.
+    // checkout-level accent must claim the button too, or a brand-coloured button
+    // opens a merchant-accented modal.
     target = document.createElement("div");
     document.body.appendChild(target);
 

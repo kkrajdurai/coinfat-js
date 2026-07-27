@@ -1,6 +1,4 @@
-/**
- * The polling loop: when it backs off, when it gives up, and how subscribers see it.
- */
+/** The polling loop: when it backs off, when it gives up, what subscribers see. */
 
 import {afterEach, describe, expect, it} from "vitest";
 import {CheckoutApiError} from "../src/core/api.js";
@@ -37,8 +35,8 @@ describe("backoff", () => {
     engine.start();
     await sleep(400);
 
-    // Flat 20ms polling would be ~20 attempts; doubling gives 20, 40, 80, 160,
-    // 320. The upper bound is the point: a failing endpoint must not be hammered.
+    // Flat 20ms polling would be ~20 attempts; doubling gives 20, 40, 80, 160, 320.
+    // The upper bound is the point: a failing endpoint must not be hammered.
     expect(shows).toBeGreaterThanOrEqual(2);
     expect(shows).toBeLessThanOrEqual(6);
   });
@@ -65,8 +63,8 @@ describe("backoff", () => {
     const afterRecovery = shows;
     await sleep(200);
 
-    // Back at ~20ms the last 200ms alone adds several polls; an unreset streak
-    // would still be growing the interval.
+    // Back at ~20ms the last 200ms alone adds several polls; an unreset streak would
+    // still be growing the interval.
     expect(shows - afterRecovery).toBeGreaterThan(3);
     expect(engine.getState().error).toBeNull();
   });
@@ -134,8 +132,7 @@ describe("giving up", () => {
     engine.start();
     await sleep(200);
 
-    // The ulid demonstrably resolved once, so a later 404 is a blip, not a bad
-    // link — notFound stays false and the backoff handles it.
+    // The ulid demonstrably resolved once, so a later 404 is a blip, not a bad link.
     expect(shows).toBeGreaterThan(1);
     expect(engine.getState().notFound).toBe(false);
     expect(engine.getState().invoice).not.toBeNull();
@@ -149,8 +146,8 @@ describe("subscribe", () => {
 
     engine.subscribe((state) => seen.push(state));
 
-    // A view mounting mid-flight renders from state rather than waiting for a
-    // change, which is what lets a modal reopen paint the invoice at once.
+    // A view mounting mid-flight renders from state rather than waiting for a change,
+    // which is what lets a modal reopen paint the invoice at once.
     expect(seen).toHaveLength(1);
     expect(seen[0]).toBe(engine.getState());
   });

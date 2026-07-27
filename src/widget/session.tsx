@@ -54,8 +54,6 @@ export class CheckoutSession {
     api: CheckoutApiClient,
     private readonly params: CheckoutParams
   ) {
-    // On the controller, not the view: it outlives a modal close/reopen, so each
-    // transition is reported once per invoice.
     this.controller = new CheckoutController(params.invoice, api, {
       callbacks: this.composeCallbacks()
     });
@@ -65,7 +63,7 @@ export class CheckoutSession {
     }
   }
 
-  /** Open the modal presenter. No-op for inline. */
+  /** No-op for inline. */
   open(): void {
     if (this.params.display !== "modal" || this.opened) {
       return;
@@ -74,7 +72,6 @@ export class CheckoutSession {
     this.mountModal();
   }
 
-  /** Close and tear down the modal presenter. */
   close(): void {
     if (this.opened) {
       this.destroy();
@@ -154,9 +151,8 @@ export class CheckoutSession {
     } = this.params;
 
     return {
-      // The store's brand_color seeds the accent on first load, unless the merchant
-      // passed an explicit `theme.accent` (which wins) — mirrors the CSS var default
-      // `--cf-primary: var(--cf-accent, var(--cf-brand))`.
+      // The store's brand_color seeds the accent on first load; an explicit
+      // `theme.accent` wins.
       onReady: (invoice) => {
         if (
           this.mount &&

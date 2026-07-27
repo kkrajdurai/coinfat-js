@@ -1,8 +1,7 @@
 /**
- * Dependency-free fetch client for the public checkout endpoints.
- *
- * Bearer-less by design: the invoice ulid in the URL is the sole capability, so
- * requests are sent WITHOUT credentials.
+ * Dependency-free fetch client for the public checkout endpoints. Bearer-less by
+ * design: the ulid in the URL is the sole capability, so requests carry no
+ * credentials and no auth headers.
  */
 
 import type {Checkout, Wallet} from "./types.js";
@@ -22,11 +21,7 @@ export class CheckoutApiError extends Error {
   }
 }
 
-/**
- * A cancelled request, not a failure: aborting a fetch rejects with a DOMException
- * named "AbortError".
- * https://developer.mozilla.org/en-US/docs/Web/API/AbortController/abort
- */
+/** A cancelled request, not a failure — an aborted fetch rejects with this name. */
 export function isAbortError(error: unknown): boolean {
   return (error as Error)?.name === "AbortError";
 }
@@ -37,10 +32,9 @@ interface RequestOptions {
 }
 
 /**
- * The transport seam `CheckoutController` depends on. Declared apart from the class
- * that implements it: depending on `CheckoutApi` would drag its private fields into
- * the type, forcing every substitute (a test double, a merchant's own transport)
- * through a cast.
+ * The transport seam `CheckoutController` depends on. Declared apart from the class:
+ * depending on `CheckoutApi` would drag its private fields into the type, forcing
+ * every substitute through a cast.
  */
 export interface CheckoutApiClient {
   show(ulid: string, signal?: AbortSignal): Promise<Checkout>;
@@ -56,20 +50,16 @@ export interface CheckoutApiClient {
 export class CheckoutApi implements CheckoutApiClient {
   constructor(private readonly apiBase: string) {}
 
-  /** GET /checkout/{ulid} — the payer-facing invoice view. */
   show(ulid: string, signal?: AbortSignal): Promise<Checkout> {
     return this.request("GET", this.endpoint(ulid), {signal});
   }
 
-  /**
-   * GET /checkout/{ulid}/wallets — the payable coins with their active networks.
-   * Static per invoice: fetch once, never in the poll.
-   */
+  /** The payable coins with their active networks. Static per invoice. */
   wallets(ulid: string, signal?: AbortSignal): Promise<Wallet[]> {
     return this.request("GET", this.endpoint(ulid, "/wallets"), {signal});
   }
 
-  /** POST /checkout/{ulid}/select — pick (or switch) the coin/network to pay with. */
+  /** Pick — or switch — the coin/network to pay with. */
   select(
     ulid: string,
     walletNetworkId: string,
@@ -81,7 +71,7 @@ export class CheckoutApi implements CheckoutApiClient {
     });
   }
 
-  /** POST /checkout/{ulid}/requote — refresh the rate lock on the active payment. */
+  /** Refresh the rate lock on the active payment. */
   requote(ulid: string, signal?: AbortSignal): Promise<Checkout> {
     return this.request("POST", this.endpoint(ulid, "/requote"), {signal});
   }
@@ -112,8 +102,8 @@ export class CheckoutApi implements CheckoutApiClient {
         signal
       });
     } catch (error) {
-      // Aborts propagate unwrapped: the controller tells "superseded by a newer
-      // request" from a real failure purely by this.
+      // Aborts propagate unwrapped: this is the controller's only signal that a
+      // request was superseded rather than failed.
       if (isAbortError(error)) {
         throw error;
       }
@@ -146,9 +136,8 @@ export class CheckoutApi implements CheckoutApiClient {
 }
 
 /**
- * Build the error for a non-2xx. The `{message, errors}` a 422 carries is the only
- * text that can tell a payer why their selection was rejected, so it wins over the
- * bare status.
+ * The error for a non-2xx. A 422's `{message, errors}` is the only text that can tell
+ * a payer why their selection was rejected, so it wins over the bare status.
  */
 async function failureFor(response: Response): Promise<CheckoutApiError> {
   const seconds = Number(response.headers.get("Retry-After"));

@@ -1,6 +1,6 @@
 /**
  * Terminal states route on `invoice.status` and link to the store when a url is set.
- * Rendered without a provider, so copy comes from the default (English) table.
+ * Rendered without a provider, so copy comes from the default English table.
  */
 
 import {render} from "preact";
@@ -36,7 +36,6 @@ describe("Terminal", () => {
     });
 
     expect(el.textContent).toContain("Your payment was received");
-    // Reassurance: the amount they paid is shown on success.
     expect(el.textContent).toContain("$10.00");
     // The animated check, not a static status line.
     expect(el.querySelector(".cf-check-draw")).not.toBeNull();

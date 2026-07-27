@@ -56,9 +56,8 @@ export class CheckoutButton {
     this.mount = createShadowHost(this.params.theme);
     target.appendChild(this.mount.host);
 
-    // The modal it opens carries its own provider; the button's lone label only
-    // needs the resolved default, and the `??` skips the table lookup entirely when
-    // the merchant gave a label — honouring the checkout's locale/strings otherwise.
+    // The modal it opens carries its own provider; the button's lone label just
+    // follows the checkout's locale/strings when the merchant gave none.
     const label =
       this.params.label ??
       resolveStrings(
@@ -76,11 +75,10 @@ export class CheckoutButton {
       </button>
     );
 
-    // The button paints before the modal fetches anything, so on its own it can't
-    // know the store's brand_color and would sit in the default orange while opening
-    // a brand-coloured checkout. Mirror `openCheckout`'s precedence exactly: whatever
-    // accent the modal will use, the button wears — and only when the merchant fixed
-    // none do we look the store's colour up. Best-effort: a failure keeps the default.
+    // The button paints before the modal fetches anything, so it would otherwise sit
+    // in the default orange while opening a brand-coloured checkout. Mirror
+    // `openCheckout`'s precedence exactly, so the button wears whatever accent the
+    // modal will. Best-effort: a failed lookup keeps the default.
     const fixedAccent = (this.params.checkout?.theme ?? this.params.theme)
       ?.accent;
 

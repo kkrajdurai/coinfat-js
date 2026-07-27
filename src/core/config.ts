@@ -7,13 +7,8 @@ export type Environment = "production" | "development";
 
 /**
  * No trailing slash, no `/api/v1` suffix — `resolveConfig` adds it. Production is
- * reserved: the host is not deployed yet, development is the live one.
- *
- * Spelled out rather than composed from the brand: a subdomain is a deployment
- * choice, not a fact about the name. Staging could move to a different host entirely
- * without the brand changing, and a rebrand would want these re-checked by hand
- * anyway — so composition would buy nothing and cost the ability to read the real URL
- * off the file that owns it.
+ * reserved: the host is not deployed yet, development is the live one. Spelled out
+ * rather than composed from `BRAND` (see `brand.ts`).
  */
 const BASE_URLS: Record<Environment, string> = {
   production: "https://api.coinfat.com",
@@ -30,10 +25,7 @@ export interface ResolvedConfig {
 }
 
 export interface CoinfatOptions {
-  /**
-   * The backend to talk to. Defaults to 'development', the only live host — flip
-   * the default once production is deployed.
-   */
+  /** Defaults to 'development', the only live host — flip once production deploys. */
   environment?: Environment;
   /**
    * Escape hatch for a custom backend (local dev, staging). Overrides

@@ -1,7 +1,4 @@
-/**
- * CheckoutController ordering and teardown. Every case is a regression test,
- * verified to fail against the code as it stood before its fix.
- */
+/** CheckoutController ordering and teardown. Every case is a regression test. */
 
 import {afterEach, describe, expect, it} from "vitest";
 import {CheckoutApiError} from "../src/core/api.js";
@@ -46,7 +43,7 @@ describe("mutations", () => {
     void engine.select("ethereum");
     await sleep(250);
 
-    // Anything else means the payer is shown an address for a chain they did not pick.
+    // Anything else shows an address for a chain the payer did not pick.
     expect(engine.getState().invoice?.active_payment?.address).toBe(
       "addr_ethereum"
     );
@@ -92,7 +89,7 @@ describe("mutations", () => {
     const engine = controller("inv_1", api, NEVER_POLL);
     let rejected = false;
 
-    // Fire-and-forget from a click handler: rejecting would surface as an
+    // Fire-and-forget from a click handler: a rejection would surface as an
     // unhandledrejection on the merchant's page.
     await engine.select("tron").catch(() => {
       rejected = true;

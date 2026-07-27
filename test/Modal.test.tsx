@@ -1,7 +1,7 @@
 /**
- * Modal chrome a11y: dialog semantics, Escape / backdrop close, host scroll lock,
- * focus restore, and the Tab focus trap. Rendered in plain DOM (not a shadow root),
- * so `getRootNode()` resolves to `document` — the trap logic is identical.
+ * Modal chrome a11y: dialog semantics, Escape / backdrop close, host scroll lock, focus
+ * restore, and the Tab trap. Rendered in plain DOM, so `getRootNode()` resolves to
+ * `document` — the trap logic is identical.
  */
 
 import {render} from "preact";
@@ -61,8 +61,8 @@ describe("Modal", () => {
   });
 
   it("widens the card for the wide layout", () => {
-    // At max-w-sm (24rem) the card can never reach the pay panel's @md (28rem)
-    // split, which made layout:"wide" a no-op for modals.
+    // At max-w-sm (24rem) the card never reaches the pay panel's @md (28rem) split,
+    // which made layout:"wide" a no-op for modals.
     expect(open(() => {}).className).toContain("max-w-sm");
     close();
     expect(open(() => {}, undefined, "wide").className).toContain("max-w-xl");
@@ -79,12 +79,11 @@ describe("Modal", () => {
     dialog.click();
     expect(onClose).toHaveBeenCalledTimes(1);
 
-    // A click on the dimmed wrapper around the card closes.
     dialog.parentElement!.click();
     expect(onClose).toHaveBeenCalledTimes(2);
 
-    // And so does the outer mask — the scroll region is inset from its bottom edge to
-    // clear the attribution badge, so that strip is clickable mask in its own right.
+    // The outer mask too — the scroll region is inset from its bottom edge to clear the
+    // badge, so that strip is clickable mask in its own right.
     host!.querySelector<HTMLElement>(".fixed.inset-0")!.click();
     expect(onClose).toHaveBeenCalledTimes(3);
   });
@@ -94,9 +93,8 @@ describe("Modal", () => {
     const badge = host!.querySelector<HTMLElement>('div[aria-hidden="true"]')!;
 
     expect(badge.textContent).toContain(BRAND.name);
-    // Outside the dialog and inert: the focus trap enumerates focusables within
-    // dialogRef only, and `pointer-events-none` keeps the corner it covers clickable
-    // through to the mask beneath.
+    // Outside the dialog and inert: the trap enumerates focusables within dialogRef
+    // only, and `pointer-events-none` keeps its corner clickable through to the mask.
     expect(dialog.contains(badge)).toBe(false);
     expect(badge.querySelectorAll("a, button, input, [tabindex]")).toHaveLength(
       0

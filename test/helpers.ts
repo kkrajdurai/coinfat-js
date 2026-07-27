@@ -1,9 +1,7 @@
 /**
- * Shared fakes for the core-engine tests.
- *
- * The engine's hard parts are all about ordering, so these reject the instant their
- * signal aborts, exactly as `fetch` does. A fake that only checks `signal.aborted`
- * after its delay silently passes tests that should fail.
+ * Shared fakes for the core-engine tests. The engine's hard parts are all ordering, so
+ * these reject the instant their signal aborts, exactly as `fetch` does — a fake that
+ * only checks `signal.aborted` after its delay silently passes tests that should fail.
  */
 
 import type {CheckoutApiClient} from "../src/core/api.js";
@@ -79,9 +77,8 @@ export function fakeApi(parts: Partial<CheckoutApiClient>): CheckoutApiClient {
 }
 
 /**
- * A stand-in for `Response` covering what `CheckoutApi.request` touches. Hand-built
- * rather than using the global so `json()` throws a real SyntaxError on a non-JSON
- * body, which is the case under test.
+ * A stand-in for `Response` covering what `CheckoutApi.request` touches. Hand-built so
+ * `json()` throws a real SyntaxError on a non-JSON body, which is the case under test.
  */
 export function response(
   body: string,

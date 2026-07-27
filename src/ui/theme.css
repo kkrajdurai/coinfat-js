@@ -3,11 +3,11 @@
 /*
  * Coinfat's design tokens. Two Shadow-DOM specifics:
  *
- * 1. `@theme inline` makes utilities compile to `var(--cf-*)` references rather
- *    than emitted vars, so they resolve from the `:host` block below instead of a
- *    `:root` that does not exist inside a shadow tree.
- * 2. Every token is prefixed `--cf-` because CSS custom properties INHERIT through
- *    the shadow boundary — an unprefixed `--primary` on the host page would leak in.
+ * 1. `@theme inline` compiles utilities to `var(--cf-*)` references rather than emitted
+ *    vars, so they resolve from the `:host` block below instead of a `:root` that does
+ *    not exist inside a shadow tree.
+ * 2. Every token is prefixed `--cf-` because custom properties INHERIT through the
+ *    shadow boundary — an unprefixed `--primary` on the host page would leak in.
  */
 
 @theme inline {
@@ -43,10 +43,8 @@
 }
 
 :host {
-  /* Brand + merchant accent seam: --cf-accent (set from a merchant `theme.accent`
-     override at mount, else from the store's brand_color once the invoice loads —
-     see widget/mount.ts applyAccent + session.tsx) wins over the default brand
-     orange. */
+  /* Accent seam: --cf-accent (a merchant `theme.accent`, else the store's brand_color
+     — see widget/mount.ts applyAccent) wins over the default brand orange. */
   --cf-brand: #ff8201;
   --cf-primary: var(--cf-accent, var(--cf-brand));
   --cf-primary-foreground: #241f21;
@@ -65,9 +63,8 @@
   --cf-destructive: oklch(0.577 0.245 27.325);
   --cf-success: oklch(0.62 0.15 150);
   --cf-warning: oklch(0.75 0.15 78);
-  /* Info stays a fixed blue, NOT the brand accent: a "payment detected" notice must
-     never inherit a red/alarming brand colour. Like success/warning, it holds across
-     light and dark without an override. */
+  /* A fixed blue, NOT the brand accent: a "payment detected" notice must never inherit
+     a red/alarming brand colour. Holds across light and dark, like success/warning. */
   --cf-info: oklch(0.62 0.15 255);
   --cf-radius: 0.625rem;
   --cf-font-sans:
@@ -81,10 +78,10 @@
   text-rendering: optimizeLegibility;
 }
 
-/* The base typography is repeated on the app root — an element inside the shadow tree,
-   which no outer-page selector can target. `:host` sits in the outer document, so a
-   merchant's `* { font-family: … !important }` overrides it and every descendant would
-   inherit the page font; declaring it here wins by being unreachable from outside. */
+/* Base typography repeated on the app root, an element inside the shadow tree that no
+   outer-page selector can reach. `:host` sits in the outer document, so a merchant's
+   `* { font-family: … !important }` beats it and the widget inherits the page font;
+   declaring it here wins by being untargetable from outside. */
 .cf-app {
   color: var(--cf-foreground);
   font-family: var(--cf-font-sans);
@@ -105,9 +102,8 @@
 }
 
 /*
- * Terminal-state entrance animations. Plain CSS (not @theme utilities) so the
- * keyframes live in the shadow stylesheet, where — unlike @property — they resolve.
- * A single reduced-motion block drops all of it and leaves the check fully drawn.
+ * Terminal-state entrance animations. Plain CSS (not @theme utilities) so the keyframes
+ * live in the shadow stylesheet, where — unlike @property — they resolve.
  */
 @keyframes cf-pop {
   0% {
@@ -141,8 +137,8 @@
 }
 
 .cf-pop {
-  /* Ease-out, not an overshoot curve: the keyframe already peaks at scale(1.08), and
-     a bezier overshoot on top compounds into an unintendedly bouncy pop. */
+  /* Ease-out, not an overshoot curve: the keyframe already peaks at scale(1.08), and a
+     bezier overshoot on top compounds into an unintendedly bouncy pop. */
   animation: cf-pop 0.4s ease-out both;
 }
 

@@ -1,7 +1,4 @@
-/**
- * The pay panel's amount arithmetic and copy, kept out of the component so what a
- * payer is told they still owe is testable without a renderer.
- */
+/** The pay panel's amount arithmetic and notice choice, without a renderer. */
 
 import {describe, expect, it} from "vitest";
 import type {StoreInvoicePayment} from "../src/core/types.js";
@@ -55,8 +52,6 @@ describe("paymentAmounts", () => {
   });
 
   it("passes the backend's own strings straight through", () => {
-    // Rounded to precision and trimmed server-side; re-deriving could only return
-    // the same string, or a worse one.
     const amounts = paymentAmounts(
       payment({expected_value: coin("0.00105949"), received_value: coin("0")})
     );
@@ -97,8 +92,8 @@ describe("paymentNotice", () => {
       })
     );
 
-    // The descriptor carries the number so the copy layer needn't re-derive it:
-    // "partial payment" alone leaves the payer doing fee-adjusted arithmetic.
+    // The descriptor carries the number: "partial payment" alone leaves the payer
+    // doing fee-adjusted arithmetic.
     expect(notice).toEqual({
       kind: "underpaid",
       tone: "warning",

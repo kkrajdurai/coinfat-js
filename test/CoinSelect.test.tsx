@@ -1,10 +1,8 @@
 /**
- * The coin/network picker. Covers the two-step flow, the sole-option auto-selects,
- * the switch pre-selection, and the wallets-fetch retry. The engine's select() plumbing
- * is covered in the engine specs; here we only assert the id the picker hands it.
- *
- * `act` flushes Preact's batched state updates and effects, so every interaction below
- * is settled synchronously by the time we assert.
+ * The coin/network picker: the two-step flow, the sole-option auto-selects, the switch
+ * pre-selection and the wallets-fetch retry. Only the id handed to select() is asserted;
+ * the engine specs cover the rest. `act` flushes Preact's batched updates and effects,
+ * so every interaction is settled by the time we assert.
  */
 
 import {render} from "preact";
@@ -17,8 +15,8 @@ import {CoinSelect} from "../src/ui/CoinSelect.js";
 import {fakeApi, invoice} from "./helpers.js";
 
 function net(id: string, name: string): WalletNetwork {
-  // `wallet`/`execution_fee_wallet` left unset: the wallets endpoint may not load the
-  // nested coin, and the row must render (name only) rather than throw on the icon.
+  // `wallet`/`execution_fee_wallet` left unset: the endpoint may not load the nested
+  // coin, and the row must render name-only rather than throw on the icon.
   return {
     id,
     name,
@@ -157,8 +155,7 @@ describe("CoinSelect", () => {
   it("auto-selects a sole coin and its sole network", () => {
     const flow = mount({wallets: [ETH]});
 
-    // Nothing tapped: the one coin and its one network resolve on their own, so
-    // Continue is already live.
+    // Nothing tapped: the one coin and its one network resolve on their own.
     expect(button("Continue").disabled).toBe(false);
 
     click("Continue");
@@ -172,8 +169,7 @@ describe("CoinSelect", () => {
     expect(flow.el.textContent).toContain("Choose a network");
     expect(button("Lightning").getAttribute("aria-checked")).toBe("true");
 
-    // Re-confirming the same network is a no-op that would never close the switcher,
-    // so Continue stays disabled until a different network is picked.
+    // Re-confirming the same network is a no-op that would never close the switcher.
     expect(button("Continue").disabled).toBe(true);
 
     click("Bitcoin"); // the other network of the same coin

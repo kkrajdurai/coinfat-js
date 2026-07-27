@@ -9,7 +9,7 @@ export function useCheckoutState(
     controller.getState()
   );
 
-  // subscribe() immediately emits the current state and returns an unsubscribe.
+  // subscribe() emits the current state immediately and returns an unsubscribe.
   useEffect(() => controller.subscribe(setState), [controller]);
 
   return state;

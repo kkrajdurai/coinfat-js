@@ -1,15 +1,12 @@
-/**
- * Environment -> base URL resolution. The API version is pinned by the SDK;
- * merchants only pick an environment, or bypass both with an explicit `apiBase`.
- */
+/** Environment -> base URL resolution. */
 
 import {describe, expect, it} from "vitest";
 import {API_VERSION, resolveConfig} from "../src/core/config.js";
 
 describe("resolveConfig", () => {
   it("defaults to development, the only host that is live", () => {
-    // Production is reserved and not deployed. Defaulting to it pointed every
-    // caller at a dead host, surfacing as a blank widget.
+    // Production is not deployed; defaulting to it points every caller at a dead
+    // host, which surfaces as a blank widget.
     expect(resolveConfig()).toEqual({
       environment: "development",
       apiBase: "https://test-api.coinfat.com/api/v1"
@@ -31,7 +28,6 @@ describe("resolveConfig", () => {
       apiBase: "http://localhost:8000/api/v1"
     });
 
-    // `environment` is still reported as asked, but the override wins the URL.
     expect(config).toEqual({
       environment: "production",
       apiBase: "http://localhost:8000/api/v1"

@@ -1,9 +1,6 @@
 /**
  * Framework-neutral checkout state engine: fetch the invoice, poll until a terminal
  * status, and expose `select`/`requote`. Free of Preact so it can back any view.
- *
- * Realtime is deliberately out of scope: it would slot in as a refetch-kick on top
- * of this engine, not a replacement for the poll.
  */
 
 import {
@@ -26,15 +23,15 @@ export interface CheckoutState {
   invoice: Checkout | null;
   /**
    * The picker's data source: payable coins with their active networks. Null until
-   * the one-off fetch lands, or if it failed — `loadWallets()` retries. Not the
-   * same as `invoice.supported_wallets`, which carries no networks.
+   * the one-off fetch lands, or if it failed — `loadWallets()` retries. Not
+   * `invoice.supported_wallets`, which carries no networks.
    */
   wallets: Wallet[] | null;
   walletsError: CheckoutApiError | null;
   isLoading: boolean;
   notFound: boolean;
   error: CheckoutApiError | null;
-  /** Invoice reached a terminal status (completed/expired/canceled). */
+  /** completed / expired / canceled. */
   isTerminal: boolean;
   /** A `select()` or `requote()` is in flight. One flag: they supersede each other. */
   mutating: boolean;
@@ -75,9 +72,9 @@ export class CheckoutController {
   /** Consecutive failed fetches, used to back off polling (and 429s). */
   private errorStreak = 0;
   /**
-   * Bumped by every mutation. One whose sequence no longer matches has been
-   * superseded and MUST NOT apply its response — otherwise two fast coin taps can
-   * resolve out of order and show the address for the network nobody chose.
+   * Bumped by every mutation. One whose sequence no longer matches is superseded and
+   * MUST NOT apply its response — two fast coin taps could otherwise resolve out of
+   * order and show the address for the network nobody chose.
    */
   private mutationSeq = 0;
   private readonly callbacks: CheckoutCallbacks;
@@ -112,7 +109,7 @@ export class CheckoutController {
     };
   }
 
-  /** Begin the initial fetch and polling loop. Idempotent. */
+  /** Idempotent. */
   start(): void {
     if (this.started) {
       return;
@@ -123,7 +120,6 @@ export class CheckoutController {
     void this.loadWallets();
   }
 
-  /** Stop polling and abort any in-flight request. */
   stop(): void {
     this.started = false;
     this.clearPoll();
@@ -135,7 +131,7 @@ export class CheckoutController {
 
   /**
    * Fetch the payable coins + networks. Runs once from `start()`; public so the UI
-   * can retry after a failure. Never polled — this data is static per invoice.
+   * can retry after a failure. Never polled.
    */
   async loadWallets(): Promise<void> {
     // Static per invoice, so nothing to refetch once it has landed — which is also
@@ -208,7 +204,7 @@ export class CheckoutController {
 
     // Suspend the poll so an in-flight GET can't resolve after this mutation and
     // clobber the fresh invoice, and abort whatever was in flight — an earlier
-    // mutation included, so a slower first pick can't overwrite a faster second.
+    // mutation included, so a slow first pick can't overwrite a fast second.
     this.clearPoll();
     this.abort?.abort();
     const controller = new AbortController();
@@ -218,8 +214,8 @@ export class CheckoutController {
 
     try {
       const invoice = await call(controller.signal);
-      // Belt and braces: the abort should already have killed a superseded request,
-      // but a response that raced past it still must not be applied.
+      // Belt and braces: a response that raced past its own abort must still not be
+      // applied.
       if (this.isSuperseded(seq)) {
         return;
       }
@@ -254,7 +250,6 @@ export class CheckoutController {
     }
   }
 
-  /** Has a newer mutation started since the one that took this sequence number? */
   private isSuperseded(seq: number): boolean {
     return seq !== this.mutationSeq;
   }
@@ -272,8 +267,7 @@ export class CheckoutController {
   private schedulePoll(): void {
     // Two completion paths can land here at once — a mutation's `finally` and the
     // refetch() that aborted it. Without this the first timer handle is orphaned:
-    // untracked, uncancellable by stop(), still firing, and doubling the request
-    // rate against a rate-limited API.
+    // uncancellable by stop(), still firing, doubling the rate against a throttled API.
     this.clearPoll();
 
     // A terminal invoice and a genuine not-found will never change. Transient
@@ -287,9 +281,9 @@ export class CheckoutController {
         ? Math.min(this.pollMs * 2 ** this.errorStreak, MAX_BACKOFF_MS)
         : this.pollMs;
 
-    // Never come back sooner than the server asked: a 429's Retry-After knows when
-    // the throttle window clears better than the exponential guess, so it raises
-    // the floor, uncapped.
+    // Never come back sooner than the server asked: a 429's Retry-After knows the
+    // throttle window better than the exponential guess, so it raises the floor,
+    // uncapped.
     const hint = this.state.error?.retryAfter;
     const delay = hint ? Math.max(hint * 1000, backoff) : backoff;
 
@@ -313,7 +307,7 @@ export class CheckoutController {
 
   /**
    * Fire the merchant's callbacks for whatever changed. Every branch is guarded by
-   * `seen`, so running this after each patch is safe and re-entrant callbacks
+   * `seen`, so running this after each patch is safe and a re-entrant callback
    * cannot loop.
    */
   private emitLifecycle(): void {

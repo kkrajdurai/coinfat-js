@@ -1,11 +1,8 @@
 /**
- * Terminal states — the checkout is over. Routed purely on `invoice.status`
- * (completed / canceled / expired); the payer payload carries nothing else to
- * distinguish them, and there is no receipt, tx hash, or paid-at to show. Each is a
- * centred icon + message, plus a link to the store when the invoice supplied one.
- *
- * The success check animates in (CSS, see theme.css `cf-*`), and honours
- * `prefers-reduced-motion` — a payer who opted out still sees a fully-drawn check.
+ * Terminal states — the checkout is over. Routed purely on `invoice.status`; the payer
+ * payload carries no receipt, tx hash or paid-at to show. Each is a centred icon +
+ * message, plus a link to the store when the invoice supplied one. The success check
+ * animates in (theme.css `cf-*`) and honours `prefers-reduced-motion`.
  */
 
 import type {ComponentChild} from "preact";
@@ -16,9 +13,9 @@ import {useI18n} from "./strings/context.js";
 import type {CheckoutStrings} from "./strings/index.js";
 
 /**
- * The payer-facing line for a terminal status. Exported so the card can mirror it in
- * an always-mounted live region — a freshly-mounted `role="status"` here would not
- * reliably announce the poll transition into a terminal state.
+ * The payer-facing line for a terminal status. Exported so the card can mirror it in an
+ * always-mounted live region — a `role="status"` mounted here would not reliably
+ * announce the poll transition into a terminal state.
  */
 export function terminalMessage(
   status: StoreInvoiceStatus,
@@ -37,7 +34,7 @@ export function Terminal({invoice}: {invoice: Checkout}) {
     return (
       <TerminalPanel
         icon={<SuccessCheck />}
-        // The amount they just paid — reassurance the success screen is theirs.
+        // Reassurance that this success screen is theirs.
         amount={formatMoney(invoice.amount, locale)}
         message={message}
         href={invoice.success_url}

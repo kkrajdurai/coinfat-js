@@ -1,7 +1,4 @@
-/**
- * Transport-level behaviour of the fetch client, separate from the error-body
- * contract covered in api-errors.test.ts.
- */
+/** Transport behaviour of the fetch client; the error body is api-errors.test.ts. */
 
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {CheckoutApi, CheckoutApiError, isAbortError} from "../src/core/api.js";
@@ -78,9 +75,8 @@ describe("failures", () => {
       .show("inv_1")
       .catch((caught: unknown) => caught);
 
-    // The controller tells "superseded by a newer request" from a real failure
-    // purely by this. Rewrapping would make every aborted poll look like an error,
-    // inflate the backoff, and fire onError.
+    // Rewrapping would make every aborted poll look like a real failure: inflated
+    // backoff, and a spurious onError.
     expect(isAbortError(error)).toBe(true);
     expect(error).not.toBeInstanceOf(CheckoutApiError);
   });

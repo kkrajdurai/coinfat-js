@@ -1,9 +1,7 @@
 /**
- * Local dev harness (`npm run dev`). Not part of the published bundle.
- *
- * Append `?invoice=<ulid>` and run the backend locally. Without either it renders
- * the skeleton and then a not-found state, which still exercises the shadow-DOM +
- * Tailwind pipeline.
+ * Local dev harness (`npm run dev`), not part of the published bundle. Append
+ * `?invoice=<ulid>` and run the backend locally; without either it renders the
+ * skeleton then a not-found state, which still exercises the shadow-DOM pipeline.
  */
 import {Coinfat} from "./index.js";
 

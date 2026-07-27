@@ -26,7 +26,6 @@ export interface CheckoutProps {
 /** Every top-level view is the same card; only what sits inside it differs. */
 const CARD = "rounded-2xl border border-border bg-card p-5";
 
-/** The checkout core: routes state to a view and threads `layout` down to the pay panel. */
 export function Checkout({controller, layout, onRequestClose}: CheckoutProps) {
   const state = useCheckoutState(controller);
 
@@ -94,10 +93,9 @@ function InvoiceCard({
 }) {
   const {locale, strings} = useI18n();
   const {store, active_payment: payment} = invoice;
-  // Terminal invoices keep their `active_payment`. Without this gate a settled
-  // invoice would still show a live deposit address and a scannable QR, and a
-  // payer reloading the link would send a second transfer — so it routes to the
-  // terminal panel, not the pay panel.
+  // Terminal invoices keep their `active_payment`. Without this gate a settled invoice
+  // still shows a live deposit address and QR, and a payer reloading the link sends a
+  // second transfer.
   const settled = TERMINAL_STATUSES.has(invoice.status);
 
   const {picking, canSwitch, selectedNetworkId, startSwitch, cancelSwitch} =
@@ -118,9 +116,7 @@ function InvoiceCard({
       </header>
 
       <p
-        // Failed coin taps and failing polls. Mounted unconditionally: a live
-        // region inserted with its text already in place is not announced.
-        // https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Guides/Live_regions
+        // Failed coin taps and failing polls. Mounted unconditionally — see PayPanel.
         role="status"
         class={
           error
@@ -183,9 +179,9 @@ function InvoiceCard({
 }
 
 /**
- * A 4xx carries a message written for the payer ("This invoice is no longer
- * accepting payments"). A 5xx or a transport failure (status 0) has nothing worth
- * quoting, and those are the cases the poll actually retries.
+ * A 4xx carries a message written for the payer ("This invoice is no longer accepting
+ * payments"). A 5xx or a transport failure (status 0) has nothing worth quoting, and
+ * those are the cases the poll retries anyway.
  */
 function errorMessage(
   error: CheckoutApiError,
@@ -198,8 +194,8 @@ function errorMessage(
     : strings.networkError;
 }
 
-// Per status, not one style: the pulse means "still working", so leaving it on a
-// canceled invoice reads as in-progress and a paid one deserves to look settled.
+// Per status: the pulse means "still working", so leaving it on a canceled invoice
+// reads as in-progress and a paid one deserves to look settled.
 const STATUS_STYLE: Record<StoreInvoiceStatus, {chip: string; dot: string}> = {
   pending: {
     chip: "bg-primary/10 text-primary",

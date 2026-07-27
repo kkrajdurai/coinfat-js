@@ -1,7 +1,6 @@
 /**
- * The CheckoutApiError contract: everything a caller can learn about a failure
- * arrives on this one error — the payer-facing message, the validation detail, and
- * how long to wait.
+ * The CheckoutApiError contract: the payer-facing message, the validation detail and
+ * how long to wait all arrive on this one error.
  */
 
 import {afterEach, describe, expect, it, vi} from "vitest";
@@ -23,8 +22,8 @@ describe("failure shape", () => {
       })
     );
 
-    // The controller casts a bare SyntaxError to CheckoutApiError, then reads an
-    // undefined `status` off it and never trips `notFound`.
+    // The controller casts whatever it catches to CheckoutApiError, so a bare
+    // SyntaxError would leave it reading an undefined `status`.
     await expect(api().show("inv_1")).rejects.toBeInstanceOf(CheckoutApiError);
   });
 

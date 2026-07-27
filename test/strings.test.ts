@@ -1,7 +1,6 @@
 /**
  * Locale resolution: which table a `locale` picks, how a partial override layers on,
- * and how a notice descriptor turns into copy. English is the only bundled table, so
- * every path falls back to it per-key.
+ * and how a notice descriptor turns into copy.
  */
 
 import {describe, expect, it} from "vitest";
@@ -40,8 +39,8 @@ describe("resolveStrings", () => {
   });
 
   it("deep-merges a partial `status` override so omitted labels survive", () => {
-    // A partial status is expressible without a cast now; the resolver deep-merges
-    // it, so the untranslated statuses keep their English rather than going undefined.
+    // The resolver deep-merges, so untranslated statuses keep their English rather
+    // than going undefined.
     const {strings} = resolveStrings("en", {status: {pending: "En attente"}});
 
     expect(strings.status.pending).toBe("En attente");
@@ -58,8 +57,8 @@ describe("resolveStrings", () => {
   });
 
   it("ignores an `undefined`-valued override instead of blanking the key", () => {
-    // An untyped caller can pass {copyAmount: undefined}; a raw spread would blank
-    // it, and the view then calls the (now undefined) interpolation function.
+    // An untyped caller can pass {copyAmount: undefined}; a raw spread would blank it,
+    // and the view then calls the now-undefined interpolation function.
     const override = {
       copyAmount: undefined,
       sendExactly: undefined
@@ -71,8 +70,8 @@ describe("resolveStrings", () => {
   });
 
   it("normalises a blank locale to undefined so Intl gets no empty tag", () => {
-    // "" would survive negotiation and make Intl.NumberFormat("") throw, dropping
-    // the currency symbol; it must resolve exactly like no locale at all.
+    // "" survives negotiation but makes Intl.NumberFormat("") throw, dropping the
+    // currency symbol.
     expect(resolveStrings("   ").locale).toBeUndefined();
     expect(resolveStrings("").strings).toBe(en);
   });

@@ -1,6 +1,6 @@
 /**
- * The rate lock's expiry behaviour, which is where the pay panel talks back to the
- * controller. Short deadlines and a real 1s tick, so these wait a beat.
+ * Rate-lock expiry, where the pay panel talks back to the controller. Short deadlines
+ * against a real 1s tick, so these wait a beat.
  */
 
 import {render} from "preact";
@@ -73,7 +73,7 @@ describe("rate lock", () => {
     const el = mount(payment(-1_000), controller);
     await sleep(2_600); // ~2 further ticks
 
-    // The countdown keeps firing at zero; only the first may reach the network.
+    // The countdown keeps ticking at zero; only the first may reach the network.
     expect(requotes).toBe(1);
     expect(el.textContent).toContain("Refresh rate");
   });
@@ -85,7 +85,7 @@ describe("rate lock", () => {
 
     const el = mount(payment(600_000), controller);
 
-    // The quoted amount is still good; a refresh here only invites second-guessing.
+    // The quoted amount is still good; a refresh invites second-guessing.
     expect(el.textContent).not.toContain("Refresh rate");
     expect(el.textContent).toContain("Amount locked");
   });

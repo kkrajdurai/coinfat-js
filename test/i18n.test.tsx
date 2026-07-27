@@ -1,7 +1,6 @@
 /**
- * The translation seam end-to-end: a `strings` override provided at the root reaches
- * the leaf components, and with no provider they fall back to English. Proves the
- * context wiring, not the copy itself.
+ * The context wiring, not the copy: a root `strings` override reaches the leaves, and
+ * with no provider they fall back to English.
  */
 
 import {render, type ComponentChild} from "preact";
@@ -80,7 +79,7 @@ describe("i18n threading", () => {
 
     expect(el.textContent).toContain("Envoyer exactement");
     expect(el.textContent).toContain("En attente de votre paiement");
-    // The overridden key must actually replace the default, not sit beside it.
+    // The override must replace the default, not sit beside it.
     expect(el.textContent).not.toContain("Send exactly");
   });
 

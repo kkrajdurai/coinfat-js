@@ -1,8 +1,6 @@
 /**
- * Shared UI primitives.
- *
- * Icons are inline SVG rather than a library: the widget is a third-party embed and
- * every dependency is bytes on someone else's checkout page.
+ * Shared UI primitives. Icons are inline SVG rather than a library: every dependency
+ * is bytes on someone else's checkout page.
  */
 
 import type {ComponentChildren} from "preact";
@@ -111,13 +109,9 @@ export function CircleXIcon() {
 }
 
 /**
- * The brand mark, ported from the frontend's `CoinfatIcon`. That one paints itself
- * with a brand-orange gradient; here it is `currentColor` so the caller can tone it
- * down — the attribution badge wants a muted mark, not a second accent competing with
- * the merchant's own `--cf-primary`.
- *
- * The path is one of the two spellings `BRAND` cannot own: artwork is not a string.
- * The other is `theme.css`'s `--cf-` prefix.
+ * The brand mark, ported from the frontend's `CoinfatIcon`. Painted in `currentColor`
+ * rather than that one's brand-orange gradient, so the attribution badge can tone it
+ * down instead of competing with the merchant's `--cf-primary`.
  */
 export function BrandMarkIcon({class: className = ICON}: {class?: string}) {
   return (
@@ -236,10 +230,9 @@ export function CopyField({
         </span>
       </button>
       <span
-        // Outside the button on purpose: its aria-label replaces the whole
-        // subtree for name computation, so a status nested inside is never read.
-        // And mounted always — a live region created with its text already
-        // present is not announced.
+        // Outside the button on purpose: its aria-label replaces the whole subtree
+        // for name computation, so a status nested inside is never read. Mounted
+        // always — see the live-region note in PayPanel.
         class="sr-only"
         role="status">
         {copied ? strings.copied : ""}
@@ -255,11 +248,10 @@ export interface CountdownProps {
 }
 
 /**
- * Ticking "m:ss" until `target`, firing `onElapsed` once when it passes.
- *
- * `onElapsed` is held in a ref so an inline arrow does not restart the interval on
- * every render: the effect depends on `target` alone, which is also what re-arms it
- * after a requote moves the deadline.
+ * Ticking "m:ss" until `target`, firing `onElapsed` once when it passes. `onElapsed`
+ * is held in a ref so an inline arrow does not restart the interval on every render:
+ * the effect depends on `target` alone, which is also what re-arms it after a requote
+ * moves the deadline.
  */
 export function useCountdown({target, onElapsed}: CountdownProps): number {
   const elapsedRef = useRef(onElapsed);
@@ -292,8 +284,7 @@ export function RateLock({target, onElapsed}: CountdownProps) {
   const strings = useStrings();
   // Captured once as the progress-bar denominator: the component re-renders every
   // second, so this must NOT recompute from the shrinking `remainingUntil`. The call
-  // site keys on `target`, so a new deadline remounts with a fresh total — no in-place
-  // re-init effect needed.
+  // site keys on `target`, so a new deadline remounts with a fresh total.
   const totalRef = useRef(Math.max(1, remainingUntil(target)));
   const remaining = useCountdown({target, onElapsed});
 

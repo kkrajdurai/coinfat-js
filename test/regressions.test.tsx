@@ -21,8 +21,8 @@ function ethPayment(
   return {
     ulid: "01ky7xd7fef5f54ahc38182qnc",
     status: "pending",
-    // From the live payload: ETH is scale 18 but precision 8, and amounts arrive
-    // at precision. Formatting at scale invents digits the backend never sent.
+    // From the live payload: ETH is scale 18 but precision 8, and amounts arrive at
+    // precision. Formatting at scale invents digits the backend never sent.
     wallet: {symbol: "eth", scale: 18, precision: 8, svg_icon: null},
     wallet_network: {id: "eth-net-1", name: "Ethereum"},
     address: "0x000000000000000000000000000000000000dEaD",
@@ -72,14 +72,12 @@ async function loaded(payload: Checkout): Promise<HTMLElement> {
 
 describe("amounts at the wallet's precision", () => {
   it("quotes the backend's amount string verbatim", () => {
-    // Live value from POST /select. It is already rounded to precision and
-    // stripped of trailing zeros, so nothing here should touch it.
+    // Live value from POST /select, already rounded and trimmed.
     expect(paymentAmounts(ethPayment()).expected).toBe("0.00132378");
   });
 
   it("quotes the backend's shortfall verbatim, at a precision the payer can send", () => {
-    // The backend derives the shortfall at the wallet's precision (8), not its scale
-    // (18) — formatting at scale would invent digits the payer cannot send.
+    // Derived at precision (8), not scale (18): a payer cannot send those digits.
     const {remaining} = paymentAmounts(
       ethPayment({
         received_value: coin("0.001"),
@@ -97,7 +95,7 @@ describe("terminal invoices", () => {
       invoice({status: "completed", active_payment: ethPayment()})
     );
 
-    // The resource keeps active_payment after settlement. Rendering the pay panel
+    // The resource keeps active_payment after settlement; rendering the pay panel
     // anyway invites a reloading payer to send a second transfer.
     expect(el.textContent).not.toContain("0x00000000");
     expect(el.textContent).not.toContain("Listening for your payment");
@@ -160,8 +158,8 @@ describe("error copy", () => {
       "inv_1",
       fakeApi({
         show: async () => {
-          // Load once, then fail: the inline banner only exists alongside a
-          // rendered invoice. A first-load failure is the full LoadError card.
+          // Load once, then fail: the inline banner only exists alongside a rendered
+          // invoice. A first-load failure is the full LoadError card instead.
           if (++calls > 1) {
             throw new CheckoutApiError("Failed to fetch", 0);
           }

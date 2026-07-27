@@ -1,15 +1,11 @@
 /**
  * Payment-notice logic for the pay panel, free of Preact so it unit-tests directly.
- * The notice copy lives in ui/strings — this decides only which notice and with what
- * numbers.
+ * The copy lives in ui/strings — this decides only which notice, and with what numbers.
  *
- * Every amount is quoted by the backend and rendered VERBATIM: `JsonSerialize::coin()`
- * has already rounded to the wallet's precision and stripped trailing zeros, so
- * re-deriving anything through `Number` could only return the same string, or a worse
- * one. `remaining` used to be the exception — the client subtracted `received` from
- * `expected` itself — but the backend now quotes it (`payment.remaining_value`,
- * floored at zero within the tolerance band), so the only arithmetic left is the
- * `progress` percentage, which is display-only.
+ * Every amount is quoted by the backend and rendered VERBATIM: it is already rounded to
+ * the wallet's precision with trailing zeros stripped, so re-deriving through `Number`
+ * could only return the same string or a worse one. `remaining` included — the backend
+ * quotes it. The only arithmetic left is `progress`, which is display-only.
  */
 
 import type {StoreInvoicePayment} from "../core/types.js";
@@ -20,12 +16,8 @@ export interface PaymentAmounts {
   expected: string;
   received: string;
   overpaid: string;
-  /**
-   * Still owed, quoted by the backend (`payment.remaining_value`). Never negative —
-   * an overpayment is reported separately.
-   */
+  /** Still owed. Never negative — an overpayment is reported separately. */
   remaining: string;
-  /** True while the payer still owes something, for branching. */
   owes: boolean;
   /** Whether anything has arrived at all. */
   started: boolean;
@@ -53,9 +45,8 @@ export function paymentAmounts(payment: StoreInvoicePayment): PaymentAmounts {
 export type NoticeTone = "success" | "warning" | "info";
 
 /**
- * Which notice to show, plus the numbers it needs — but not the words. The copy is
- * resolved from a string table by `noticeMessage` (ui/strings), so the logic here
- * stays locale-agnostic and unit-testable. `tone` drives styling.
+ * Which notice to show and the numbers it needs — but not the words, which
+ * `noticeMessage` resolves from a string table. `tone` drives styling.
  */
 export type PaymentNotice =
   | {kind: "overpaid"; tone: "success"; extra: string; symbol: string}
@@ -63,9 +54,9 @@ export type PaymentNotice =
   | {kind: "detected"; tone: "info"};
 
 /**
- * The one thing worth telling the payer about their transfer, or null while nothing
- * has happened. Ordered by what needs acting on: an overpayment is settled, a
- * shortfall needs more funds, a detected payment just needs patience.
+ * The one thing worth telling the payer, or null while nothing has happened. Ordered by
+ * what needs acting on: an overpayment is settled, a shortfall needs more funds, a
+ * detected payment just needs patience.
  */
 export function paymentNotice(
   payment: StoreInvoicePayment

@@ -9,10 +9,9 @@ export interface ModalProps {
   children: ComponentChildren;
   onClose: () => void;
   /**
-   * Sizes the card. `narrow` stays compact; `wide` widens it past the pay panel's
-   * `@md` (28rem) split point so a modal can actually go two-column — at `max-w-sm`
-   * it never could, which made `layout: "wide"` a silent no-op for modals. Still
-   * `w-full`, so it collapses back on a small viewport like any other container.
+   * Sizes the card. `wide` must clear the pay panel's `@md` (28rem) split point or
+   * `layout: "wide"` is a silent no-op for modals — at `max-w-sm` it never could.
+   * Still `w-full`, so it collapses back on a small viewport.
    */
   layout: WidgetLayout;
 }
@@ -20,9 +19,9 @@ export interface ModalProps {
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-// Refcounted so two SDK modals open at once (or a non-LIFO close) don't restore the
-// host's scroll while one is still up. First lock captures the page's own overflow;
-// the last unlock puts it back.
+// Refcounted so two open modals (or a non-LIFO close) don't restore the host's scroll
+// while one is still up. First lock captures the page's overflow, last unlock puts it
+// back.
 let scrollLocks = 0;
 let priorOverflow = "";
 
@@ -40,13 +39,13 @@ function lockHostScroll(): () => void {
 
 /**
  * Modal chrome. The presenter positions the shadow host `fixed inset-0`, so this only
- * paints the backdrop and centres the card — plus the a11y contract a `role="dialog"`
- * promises: focus moves in on open and is trapped, Escape and a backdrop click close
- * it, the host page can't scroll behind it, and focus returns to the opener on close.
+ * paints the backdrop, centres the card, and honours the a11y contract of
+ * `role="dialog"`: focus moves in and is trapped, Escape and a backdrop click close,
+ * the host page can't scroll, focus returns to the opener.
  *
- * `aria-modal` declares the background inert to assistive tech; we don't set the DOM
- * `inert` on the merchant's page (the widget doesn't own it), so the keyboard trap is
- * what actually enforces it.
+ * `aria-modal` declares the background inert to assistive tech; the DOM `inert` is not
+ * set on the merchant's page (the widget doesn't own it), so the keyboard trap is what
+ * actually enforces it.
  */
 export function Modal({children, onClose, layout}: ModalProps) {
   const strings = useStrings();
@@ -106,9 +105,8 @@ export function Modal({children, onClose, layout}: ModalProps) {
     }
   };
 
-  // Click the dimmed area to close. Applied to each layer of the mask a click can
-  // actually land on; clicks on the card bubble up with a different target and are
-  // left alone.
+  // Click the dimmed area to close. Applied to every mask layer a click can land on;
+  // a click on the card bubbles up with a different target and is left alone.
   const closeOnSelf = (event: MouseEvent) => {
     if (event.target === event.currentTarget) onClose();
   };
@@ -117,17 +115,15 @@ export function Modal({children, onClose, layout}: ModalProps) {
     <Fragment>
       <div class="fixed inset-0 bg-black/50" onClick={closeOnSelf}>
         <div
-          // The overlay itself scrolls (not the host page, which is locked), so a card
-          // taller than the viewport — a long coin list, an underpaid breakdown — stays
-          // fully reachable instead of clipping above the fold.
+          // The overlay scrolls (not the host page, which is locked), so a card taller
+          // than the viewport stays fully reachable.
           //
-          // It stops short of the mask's bottom edge to clear the attribution badge.
-          // Padding could not do this: the badge is anchored to the viewport while
-          // padding is anchored to the content, so once the card overflowed, the gutter
-          // scrolled out of view with it and the badge landed on top of the card —
-          // over an interactive control, which a `pointer-events-none` badge then let
-          // the payer click blind. Insetting the scroll viewport is the only version of
-          // the gutter that holds at every scroll position.
+          // `bottom-10` insets the scroll VIEWPORT to clear the attribution badge.
+          // Bottom padding cannot do this: the badge is viewport-anchored, padding is
+          // content-anchored, so an overflowing card scrolls the gutter away and drops
+          // the badge onto an interactive control — which `pointer-events-none` then
+          // lets the payer click blind. Insetting is the only gutter that holds at
+          // every scroll position.
           class="absolute inset-x-0 top-0 bottom-10 overflow-y-auto">
           <div
             class="flex min-h-full items-center justify-center p-4"
@@ -156,10 +152,10 @@ export function Modal({children, onClose, layout}: ModalProps) {
 /**
  * Attribution, pinned to the mask rather than the card: a sibling of the scroll
  * container so it stays put while the overlay scrolls, and outside the dialog so the
- * focus trap never has to account for it. `pointer-events-none` keeps the corner it
- * occupies clickable-to-close like the rest of the mask — which is also why this is
- * text, not a link. The mark is toned to white rather than brand orange so it reads as
- * a footer credit and doesn't compete with the merchant's own accent inside the card.
+ * focus trap never has to account for it. `pointer-events-none` keeps its corner
+ * clickable-to-close like the rest of the mask — which is also why this is text, not a
+ * link. Toned white rather than brand orange so it reads as a footer credit instead of
+ * competing with the merchant's accent inside the card.
  */
 function PoweredBy() {
   const strings = useStrings();
