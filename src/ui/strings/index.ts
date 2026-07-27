@@ -52,18 +52,22 @@ export function resolveStrings(
 
   // Drop keys an untyped caller set to `undefined`: a spread would blank them, and the
   // interpolation keys are functions the view then calls — `undefined(...)` throws.
-  const defined = Object.fromEntries(
-    Object.entries(overrides).filter(([, value]) => value !== undefined)
-  ) as CheckoutStringsOverride;
+  const dropUndefined = <T extends object>(source: T): T =>
+    Object.fromEntries(
+      Object.entries(source).filter(([, value]) => value !== undefined)
+    ) as T;
+
+  const defined = dropUndefined(overrides);
 
   return {
     locale: normalized,
     // Shallow but for `status`, the one nested object: a partial override there must
-    // still inherit the labels it omits, or `settled(undefined)` would throw.
+    // still inherit the labels it omits — and be filtered in turn, or a blanked label
+    // renders an empty chip.
     strings: {
       ...table,
       ...defined,
-      status: {...table.status, ...defined.status}
+      status: {...table.status, ...dropUndefined(defined.status ?? {})}
     }
   };
 }

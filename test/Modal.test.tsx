@@ -123,6 +123,23 @@ describe("Modal", () => {
     expect(document.activeElement).toBe(opener);
   });
 
+  it("returns focus to an opener that lives in a shadow tree", () => {
+    // The shape the SDK's own drop-in button opens from.
+    const shadowHost = document.createElement("div");
+    document.body.appendChild(shadowHost);
+    const root = shadowHost.attachShadow({mode: "open"});
+    const button = document.createElement("button");
+    root.appendChild(button);
+    button.focus();
+    expect(root.activeElement).toBe(button);
+
+    open(() => {});
+    close();
+
+    expect(root.activeElement).toBe(button);
+    shadowHost.remove();
+  });
+
   it("traps Tab within the dialog", () => {
     const dialog = open(
       () => {},

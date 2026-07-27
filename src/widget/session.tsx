@@ -101,8 +101,23 @@ export class CheckoutSession {
     this.controller.start();
   }
 
+  /**
+   * The store's brand_color, unless an explicit `theme.accent` wins. Also called when
+   * building a host, not just from `onReady`: that fires once per invoice, but
+   * `close()` destroys the host, so a reopened modal has to seed from state.
+   */
+  private applyStoreAccent(brandColor?: string | null): void {
+    const color =
+      brandColor ?? this.controller.getState().invoice?.store.brand_color;
+
+    if (this.mount && !this.params.theme?.accent && color) {
+      applyAccent(this.mount.host, color);
+    }
+  }
+
   private mountModal(): void {
     this.mount = createShadowHost(this.params.theme);
+    this.applyStoreAccent();
     // The host is the full-viewport layer; Modal paints the backdrop inside it.
     this.mount.host.style.position = "fixed";
     this.mount.host.style.inset = "0";
@@ -151,16 +166,8 @@ export class CheckoutSession {
     } = this.params;
 
     return {
-      // The store's brand_color seeds the accent on first load; an explicit
-      // `theme.accent` wins.
       onReady: (invoice) => {
-        if (
-          this.mount &&
-          !this.params.theme?.accent &&
-          invoice.store.brand_color
-        ) {
-          applyAccent(this.mount.host, invoice.store.brand_color);
-        }
+        this.applyStoreAccent(invoice.store.brand_color);
         onReady?.(invoice);
       },
       onCoinSelected,

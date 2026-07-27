@@ -8,6 +8,7 @@ import {
   type CheckoutApiClient,
   type CheckoutApiError
 } from "./api.js";
+import {BRAND} from "./brand.js";
 import type {CheckoutCallbacks} from "./options.js";
 import {
   TERMINAL_STATUSES,
@@ -306,6 +307,19 @@ export class CheckoutController {
   }
 
   /**
+   * Merchant handlers are arbitrary code, and `refetch`/`mutate` would otherwise catch
+   * a throw as ours: blaming the payer's invoice for the merchant's bug, and rejecting
+   * the fire-and-forget `select()`/`requote()`.
+   */
+  private emit<T>(callback: ((arg: T) => void) | undefined, arg: T): void {
+    try {
+      callback?.(arg);
+    } catch (error) {
+      console.error(`${BRAND.slug}: a checkout callback threw`, error);
+    }
+  }
+
+  /**
    * Fire the merchant's callbacks for whatever changed. Every branch is guarded by
    * `seen`, so running this after each patch is safe and a re-entrant callback
    * cannot loop.
@@ -318,7 +332,7 @@ export class CheckoutController {
     if (error) {
       if (!this.seen.errored) {
         this.seen.errored = true;
-        cb.onError?.(error);
+        this.emit(cb.onError, error);
       }
     } else {
       this.seen.errored = false;
@@ -332,7 +346,7 @@ export class CheckoutController {
 
     if (firstInvoice) {
       this.seen.ready = true;
-      cb.onReady?.(invoice);
+      this.emit(cb.onReady, invoice);
     }
 
     const payment = invoice.active_payment;
@@ -350,20 +364,20 @@ export class CheckoutController {
       // A payment already present on the very first invoice was fixed server-side
       // by the merchant's `pay_with`, not chosen by the payer here.
       if (!firstInvoice) {
-        cb.onCoinSelected?.(invoice);
+        this.emit(cb.onCoinSelected, invoice);
       }
     }
 
     if (payment?.detected_at && !this.seen.detected) {
       this.seen.detected = true;
-      cb.onPaymentDetected?.(invoice);
+      this.emit(cb.onPaymentDetected, invoice);
     }
 
     if (invoice.status !== this.seen.status) {
       this.seen.status = invoice.status;
-      if (invoice.status === "completed") cb.onCompleted?.(invoice);
-      else if (invoice.status === "expired") cb.onExpired?.(invoice);
-      else if (invoice.status === "canceled") cb.onCanceled?.(invoice);
+      if (invoice.status === "completed") this.emit(cb.onCompleted, invoice);
+      else if (invoice.status === "expired") this.emit(cb.onExpired, invoice);
+      else if (invoice.status === "canceled") this.emit(cb.onCanceled, invoice);
     }
   }
 }

@@ -76,4 +76,45 @@ describe("lifecycle callbacks", () => {
 
     expect(selected).toBe(0);
   });
+
+  describe("a callback that throws", () => {
+    const throwing = () => {
+      throw new Error("merchant bug");
+    };
+
+    it("does not contaminate state.error or fire onError", async () => {
+      const errors: unknown[] = [];
+      const engine = new CheckoutController(
+        "inv_1",
+        fakeApi({show: async () => invoice({status: "completed"})}),
+        {
+          ...NEVER_POLL,
+          callbacks: {onCompleted: throwing, onError: (e) => errors.push(e)}
+        }
+      );
+
+      await engine.refetch();
+
+      expect(engine.getState().error).toBeNull();
+      expect(errors).toHaveLength(0);
+    });
+
+    it("does not make select() reject", async () => {
+      const engine = new CheckoutController(
+        "inv_1",
+        fakeApi({
+          select: async () => invoice({status: "completed"}),
+          show: async () => invoice({status: "pending"})
+        }),
+        {
+          ...NEVER_POLL,
+          // Both throw: the second would previously escape mutate()'s own catch.
+          callbacks: {onCompleted: throwing, onError: throwing}
+        }
+      );
+
+      await expect(engine.select("btc-net-1")).resolves.toBeUndefined();
+      engine.stop();
+    });
+  });
 });

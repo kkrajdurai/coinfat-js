@@ -10,6 +10,7 @@ import type {Checkout, StoreInvoicePayment} from "../src/core/types.js";
 import {Checkout as CheckoutView} from "../src/ui/Checkout.js";
 import {paymentAmounts} from "../src/ui/payment.js";
 import {createShadowHost} from "../src/widget/mount.js";
+import {CheckoutSession} from "../src/widget/session.js";
 import {fakeApi, invoice, sleep} from "./helpers.js";
 
 const coin = (amount: string) => ({amount, wallet: "eth", symbol: "ETH"});
@@ -205,5 +206,33 @@ describe("accent contrast", () => {
       ""
     );
     mount.unmount();
+  });
+});
+
+describe("modal reopen", () => {
+  it("keeps the store's accent on a host rebuilt by open()", async () => {
+    const session = new CheckoutSession(
+      fakeApi({
+        show: async () =>
+          invoice({store: {name: "S", brand_color: "#1a2b3c"}} as never)
+      }),
+      {invoice: "inv_1", display: "modal"}
+    );
+
+    const accent = () =>
+      document
+        .querySelector<HTMLElement>("body > [data-coinfat]")
+        ?.style.getPropertyValue("--cf-accent");
+
+    session.open();
+    await sleep(20);
+    expect(accent()).toBe("#1a2b3c");
+
+    session.close();
+    session.open();
+    await sleep(20);
+    expect(accent()).toBe("#1a2b3c");
+
+    session.destroy();
   });
 });

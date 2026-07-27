@@ -57,8 +57,12 @@ export function Modal({children, onClose, layout}: ModalProps) {
       return;
     }
 
-    // The opener (the merchant's button) is what had focus; restore it on close.
-    const opener = document.activeElement as HTMLElement | null;
+    // The opener is what had focus; restore it on close. Descend shadow roots, or an
+    // opener inside one (the SDK's own drop-in button) reads as its unfocusable host.
+    let opener = document.activeElement as HTMLElement | null;
+    while (opener?.shadowRoot?.activeElement) {
+      opener = opener.shadowRoot.activeElement as HTMLElement | null;
+    }
     dialog.focus();
 
     const unlockScroll = lockHostScroll();

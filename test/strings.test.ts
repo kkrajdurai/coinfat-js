@@ -69,6 +69,15 @@ describe("resolveStrings", () => {
     expect(strings.copyAmount("0.5 BTC")).toBe("Copy the amount, 0.5 BTC");
   });
 
+  it("ignores an `undefined` inside the nested status table too", () => {
+    // The same hazard one level down, where a blanked label renders an empty chip.
+    const {strings} = resolveStrings("en", {
+      status: {pending: undefined}
+    } as CheckoutStringsOverride);
+
+    expect(strings.status.pending).toBe(en.status.pending);
+  });
+
   it("normalises a blank locale to undefined so Intl gets no empty tag", () => {
     // "" survives negotiation but makes Intl.NumberFormat("") throw, dropping the
     // currency symbol.
