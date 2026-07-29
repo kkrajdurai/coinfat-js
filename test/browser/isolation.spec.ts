@@ -180,7 +180,13 @@ test("the modal traps Tab focus and restores it to the opener on Escape", async 
     expect(await deepActiveEscaped()).toBe(false);
   }
 
+  // The fixture has a live payment, so Escape raises the close warning rather than
+  // closing. Confirming through it is the only way out — which is the point of the
+  // guard, and makes this the end-to-end check that focus still comes home afterwards.
   await page.keyboard.press("Escape");
+  await expect(page.getByRole("alertdialog")).toHaveCount(1);
+  await page.getByRole("button", {name: "Close anyway"}).click();
+
   await expect(dialog).toHaveCount(0);
   await expect(page.locator("#background-btn")).toBeFocused();
 });

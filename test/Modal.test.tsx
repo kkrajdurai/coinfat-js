@@ -8,7 +8,8 @@ import {render} from "preact";
 import {act} from "preact/test-utils";
 import {afterEach, describe, expect, it, vi} from "vitest";
 import {BRAND} from "../src/core/brand.js";
-import {Modal} from "../src/ui/Modal.js";
+import {Modal, useCloseRequest} from "../src/ui/Modal.js";
+import type {CloseConfirmReason} from "../src/ui/closeGuard.js";
 
 let host: HTMLDivElement | null = null;
 let opener: HTMLButtonElement | null = null;
@@ -138,6 +139,282 @@ describe("Modal", () => {
 
     expect(root.activeElement).toBe(button);
     shadowHost.remove();
+  });
+
+  describe("the close guard", () => {
+    // A stand-in for the controller: `reason` is what the modal consults, `poll()`
+    // is a state change landing under an already-open prompt.
+    let reason: CloseConfirmReason | null;
+    let listeners: Array<() => void>;
+
+    const poll = (next: CloseConfirmReason | null) => {
+      reason = next;
+      act(() => listeners.forEach((l) => l()));
+    };
+    const settle = () => poll(null);
+
+    const guarded = (
+      onClose: () => void,
+      initial: CloseConfirmReason = "detected"
+    ) => {
+      reason = initial;
+      listeners = [];
+      host = document.createElement("div");
+      document.body.appendChild(host);
+      act(() => {
+        render(
+          <Modal
+            layout="narrow"
+            onClose={onClose}
+            closeGuard={{
+              reason: () => reason,
+              subscribe: (listener) => {
+                // Matches CheckoutController.subscribe, which calls back
+                // synchronously — the detail the raise-time race turns on.
+                listeners.push(listener);
+                listener();
+                return () => {
+                  listeners = listeners.filter((l) => l !== listener);
+                };
+              }
+            }}>
+            <button>Pay</button>
+          </Modal>,
+          host!
+        );
+      });
+      return host.querySelector<HTMLElement>('[role="dialog"]')!;
+    };
+
+    // Raising the prompt is a state update, so the dispatch has to be flushed.
+    const escape = (dialog: HTMLElement) => act(() => key(dialog, "Escape"));
+    const prompt = () =>
+      host!.querySelector<HTMLElement>('[role="alertdialog"]');
+    const button = (text: string) =>
+      Array.from(host!.querySelectorAll("button")).find((b) =>
+        b.textContent?.includes(text)
+      )!;
+
+    it("asks instead of closing, on every exit the modal owns", () => {
+      const onClose = vi.fn();
+      const dialog = guarded(onClose);
+
+      act(() => dialog.parentElement!.click());
+      expect(onClose).not.toHaveBeenCalled();
+      expect(prompt()).toBeTruthy();
+
+      act(() => button("Keep checkout open").click());
+      expect(prompt()).toBeFalsy();
+
+      // Escape is the bypass to watch: guarding only the backdrop leaves it one key away.
+      escape(dialog);
+      expect(onClose).not.toHaveBeenCalled();
+      expect(prompt()).toBeTruthy();
+    });
+
+    it("closes for real once confirmed", () => {
+      const onClose = vi.fn();
+      const dialog = guarded(onClose);
+
+      escape(dialog);
+      act(() => button("Close anyway").click());
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("hands focus back to the dialog when the prompt goes away", () => {
+      // The prompt's buttons unmount with it. Without this the dialog stops receiving
+      // keys at all and Escape does nothing.
+      const dialog = guarded(() => {});
+
+      escape(dialog);
+      act(() => button("Keep checkout open").click());
+
+      expect(document.activeElement).toBe(dialog);
+    });
+
+    it("keeps the checkout mounted behind the prompt", () => {
+      // Hidden, not unmounted — an unmount would reset a coin picker mid-switch.
+      const dialog = guarded(() => {});
+      escape(dialog);
+
+      expect(button("Pay")).toBeTruthy();
+      expect(button("Pay").closest("div[class~='hidden']")).toBeTruthy();
+    });
+
+    it("dismisses on Escape without closing the checkout", () => {
+      const onClose = vi.fn();
+      const dialog = guarded(onClose);
+
+      escape(dialog);
+      expect(prompt()).toBeTruthy();
+
+      escape(dialog);
+      expect(prompt()).toBeFalsy();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it("scopes the Tab trap to the prompt", () => {
+      // The trap reads `confirmRef`. Naming that prop `ref` silently handed it a Preact
+      // component instead of the div, so every Tab threw and focus walked out of the
+      // widget entirely — onto the merchant's own page.
+      const dialog = guarded(() => {});
+      escape(dialog);
+
+      const inPrompt = Array.from(prompt()!.querySelectorAll("button"));
+      expect(inPrompt).toHaveLength(2);
+
+      inPrompt[inPrompt.length - 1].focus();
+      expect(() => key(dialog, "Tab")).not.toThrow();
+      expect(document.activeElement).toBe(inPrompt[0]); // wrapped, not escaped
+    });
+
+    it("retracts itself if the invoice settles while it is up", () => {
+      // Otherwise "you haven't sent your payment yet" sits over a paid invoice.
+      const dialog = guarded(() => {});
+      escape(dialog);
+      expect(prompt()).toBeTruthy();
+
+      settle();
+
+      expect(prompt()).toBeFalsy();
+      expect(document.activeElement).toBe(dialog);
+    });
+
+    it("rewords itself if the reason changes while it is up", () => {
+      // The other half of the same hazard: funds arriving under a prompt that still
+      // claims nothing has been sent, right next to "Close anyway".
+      const dialog = guarded(() => {}, "awaiting");
+      escape(dialog);
+      expect(prompt()!.textContent).toContain("haven't sent");
+
+      poll("detected");
+
+      expect(prompt()!.textContent).toContain("still being confirmed");
+    });
+
+    it("keeps focus in the prompt when the mask is clicked again", () => {
+      // The real click blurs the button to <body>, which is outside the shadow root, so
+      // the dialog stops seeing keys. Re-setting the same state is a Preact no-op, so
+      // only an explicit refocus saves it.
+      const dialog = guarded(() => {});
+      escape(dialog);
+      (document.activeElement as HTMLElement).blur();
+
+      act(() => dialog.parentElement!.click());
+
+      expect(document.activeElement).toBe(button("Keep checkout open"));
+    });
+
+    it("focuses the safe action, not the destructive one", () => {
+      const dialog = guarded(() => {});
+      escape(dialog);
+
+      expect(document.activeElement).toBe(button("Keep checkout open"));
+    });
+
+    it("survives the reason clearing in the same flush that raises the prompt", async () => {
+      // `subscribe` calls its listener synchronously, so a poll landing a terminal
+      // invoice between the click and Preact's flush retracts the prompt from inside
+      // the subscribe effect. If the focus effect ran after that one it would focus a
+      // button already on its way out, dropping focus to <body> — outside the shadow
+      // root, where the dialog sees no keys. Deliberately NOT wrapped in act(), which
+      // collapses the window this lives in.
+      const dialog = guarded(() => {});
+      key(dialog, "Escape");
+      reason = null;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      expect(prompt()).toBeFalsy();
+      expect(document.activeElement).toBe(dialog);
+      expect(document.activeElement).not.toBe(document.body);
+    });
+
+    it("does not haul focus back when a poll rewords it", () => {
+      // The reword arrives from an 8s timer. Moving focus off whatever the payer was
+      // reaching for is the SDK yanking the pointer out of their hand.
+      const dialog = guarded(() => {}, "awaiting");
+      escape(dialog);
+      button("Close anyway").focus();
+
+      poll("detected");
+
+      expect(document.activeElement).toBe(button("Close anyway"));
+    });
+
+    it("describes itself to assistive tech", () => {
+      // Without aria-describedby the alertdialog announces its title and the focused
+      // button, and never the reason the payer is being stopped.
+      const dialog = guarded(() => {});
+      escape(dialog);
+
+      const labelled = prompt()!.getAttribute("aria-labelledby");
+      const described = prompt()!.getAttribute("aria-describedby");
+
+      // The visible title referenced, not duplicated into an aria-label.
+      expect(prompt()!.getAttribute("aria-label")).toBeNull();
+      expect(prompt()!.querySelector(`#${labelled}`)?.textContent).toBe(
+        "Close checkout?"
+      );
+      expect(prompt()!.querySelector(`#${described}`)?.textContent).toContain(
+        "still being confirmed"
+      );
+    });
+
+    it("unsubscribes from the controller when the prompt goes", () => {
+      const dialog = guarded(() => {});
+      escape(dialog);
+      expect(listeners).toHaveLength(1);
+
+      act(() => button("Keep checkout open").click());
+      expect(listeners).toHaveLength(0);
+
+      escape(dialog);
+      close();
+      expect(listeners).toHaveLength(0);
+    });
+
+    it("offers the guarded close to the card's own exit", () => {
+      // Checkout's Close button reaches the guard through this context. Without it the
+      // card's own exit walks straight past the warning.
+      const onClose = vi.fn();
+      let seen: (() => void) | null = null;
+      const Probe = () => {
+        seen = useCloseRequest();
+        return null;
+      };
+
+      reason = "detected";
+      listeners = [];
+      host = document.createElement("div");
+      document.body.appendChild(host);
+      act(() => {
+        render(
+          <Modal
+            layout="narrow"
+            onClose={onClose}
+            closeGuard={{
+              reason: () => reason,
+              subscribe: (listener) => {
+                // Matches CheckoutController.subscribe, which calls back
+                // synchronously — the detail the raise-time race turns on.
+                listeners.push(listener);
+                listener();
+                return () => {
+                  listeners = listeners.filter((l) => l !== listener);
+                };
+              }
+            }}>
+            <Probe />
+          </Modal>,
+          host!
+        );
+      });
+
+      expect(seen).toBeTypeOf("function");
+      act(() => seen!());
+      expect(onClose).not.toHaveBeenCalled();
+      expect(prompt()).toBeTruthy();
+    });
   });
 
   it("traps Tab within the dialog", () => {

@@ -236,3 +236,35 @@ describe("modal reopen", () => {
     session.destroy();
   });
 });
+
+describe("the card's own Close button", () => {
+  it("goes through the close guard, not around it", async () => {
+    // It reaches `requestClose` via CloseRequestContext. Wired to the raw `onRequestClose`
+    // instead, the card's exit walks straight past the warning the backdrop raises.
+    const session = new CheckoutSession(
+      fakeApi({
+        show: async () =>
+          invoice({active_payment: ethPayment({detected_at: null})})
+      }),
+      {invoice: "inv_1", display: "modal"}
+    );
+
+    session.open();
+    await sleep(30);
+
+    const shadow = () =>
+      document.querySelector("body > [data-coinfat]")?.shadowRoot ?? null;
+    const close = Array.from(shadow()!.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Close"
+    )!;
+    expect(close).toBeTruthy();
+
+    close.click();
+    await sleep(10);
+
+    expect(shadow()!.querySelector('[role="alertdialog"]')).toBeTruthy();
+    expect(shadow()!.querySelector('[role="dialog"]')).toBeTruthy();
+
+    session.destroy();
+  });
+});

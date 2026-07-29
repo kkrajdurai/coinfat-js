@@ -15,6 +15,7 @@ import {Terminal, terminalMessage} from "./Terminal.js";
 import {useCheckoutState} from "./useCheckout.js";
 import type {CheckoutStrings} from "./strings/index.js";
 import {useI18n, useStrings} from "./strings/context.js";
+import {useCloseRequest} from "./Modal.js";
 
 export interface CheckoutProps {
   controller: CheckoutController;
@@ -92,6 +93,7 @@ function InvoiceCard({
   onRequestClose?: () => void;
 }) {
   const {locale, strings} = useI18n();
+  const requestClose = useCloseRequest();
   const {store, active_payment: payment} = invoice;
   // Terminal invoices keep their `active_payment`. Without this gate a settled invoice
   // still shows a live deposit address and QR, and a payer reloading the link sends a
@@ -170,7 +172,9 @@ function InvoiceCard({
         <button
           type="button"
           class="mt-4 inline-flex rounded-md px-1 py-0.5 text-xs text-muted-foreground underline-offset-2 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          onClick={onRequestClose}>
+          // Inside a modal this is the guarded close, so the warning cannot be walked
+          // past by using the card's own exit instead of the backdrop.
+          onClick={requestClose ?? onRequestClose}>
           {strings.close}
         </button>
       ) : null}

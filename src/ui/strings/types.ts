@@ -18,6 +18,21 @@ export interface CheckoutStrings {
   /** The lead-in only; `BRAND.name` follows it untranslated. */
   poweredBy: string;
 
+  // Close confirmation. Kept to the reason to hesitate — the title and the buttons
+  // carry the decision. Two standing constraints: neither body may promise the payer
+  // can reopen (`open()` works, but whether the page still offers a way to call it is
+  // the merchant's business), and the detected one must keep saying the payment
+  // survives, or "still being confirmed" beside a Close button implies the opposite.
+  confirmCloseTitle: string;
+  /** Funds already on their way. */
+  confirmCloseDetected: string;
+  /** An address is showing, nothing sent yet. */
+  confirmCloseAwaiting: string;
+  /** Dismisses the prompt and stays. */
+  confirmCloseStay: string;
+  /** Closes for real. */
+  confirmCloseLeave: string;
+
   // Terminal states (completed / expired / canceled)
   completedMessage: string;
   expiredMessage: string;

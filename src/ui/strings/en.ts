@@ -13,6 +13,13 @@ export const en: CheckoutStrings = {
   dialogLabel: "Checkout",
   poweredBy: "Powered by",
 
+  confirmCloseTitle: "Close checkout?",
+  confirmCloseDetected:
+    "Your payment is still being confirmed. Closing won't stop it.",
+  confirmCloseAwaiting: "You haven't sent your payment yet.",
+  confirmCloseStay: "Keep checkout open",
+  confirmCloseLeave: "Close anyway",
+
   completedMessage: "Your payment was received. Thank you!",
   expiredMessage: "This payment link has expired.",
   canceledMessage: "This invoice was canceled.",

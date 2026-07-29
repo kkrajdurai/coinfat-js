@@ -8,6 +8,7 @@ import type {
   WidgetLayout
 } from "../core/options.js";
 import {Checkout} from "../ui/Checkout.js";
+import {closeConfirmReason} from "../ui/closeGuard.js";
 import {Modal} from "../ui/Modal.js";
 import {
   resolveStrings,
@@ -143,7 +144,13 @@ export class CheckoutSession {
 
     const i18n = resolveStrings(this.params.locale, this.params.strings);
     const app = modal ? (
-      <Modal layout={layout} onClose={() => this.close()}>
+      <Modal
+        layout={layout}
+        onClose={() => this.close()}
+        closeGuard={{
+          reason: () => closeConfirmReason(this.controller.getState()),
+          subscribe: (listener) => this.controller.subscribe(listener)
+        }}>
         {checkout}
       </Modal>
     ) : (
