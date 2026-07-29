@@ -312,21 +312,24 @@ describe("Modal", () => {
       expect(document.activeElement).toBe(button("Keep checkout open"));
     });
 
-    it("survives the reason clearing in the same flush that raises the prompt", async () => {
+    it("survives the reason clearing in the same flush that raises the prompt", () => {
       // `subscribe` calls its listener synchronously, so a poll landing a terminal
       // invoice between the click and Preact's flush retracts the prompt from inside
-      // the subscribe effect. If the focus effect ran after that one it would focus a
-      // button already on its way out, dropping focus to <body> — outside the shadow
-      // root, where the dialog sees no keys. Deliberately NOT wrapped in act(), which
-      // collapses the window this lives in.
+      // the subscribe effect — while the focus effect is still queued behind it. Run
+      // the other way round, the focus effect targets a button already unmounting and
+      // focus falls to <body>, outside the shadow root, where the dialog sees no keys.
+      //
+      // Both the raise and the clear go inside one act(), because that is the whole
+      // point: they land in the same flush.
       const dialog = guarded(() => {});
-      key(dialog, "Escape");
-      reason = null;
-      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      act(() => {
+        key(dialog, "Escape");
+        reason = null;
+      });
 
       expect(prompt()).toBeFalsy();
       expect(document.activeElement).toBe(dialog);
-      expect(document.activeElement).not.toBe(document.body);
     });
 
     it("does not haul focus back when a poll rewords it", () => {
