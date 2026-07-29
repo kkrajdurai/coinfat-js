@@ -46,6 +46,14 @@ export interface CheckoutStrings {
   sendExactly: string;
   /** Screen-reader alt for the deposit QR — payer-facing, so it lives here too. */
   qrAlt: (symbol: string) => string;
+  /**
+   * Toggles the QR between its inline size and an enlarged, easier-to-scan one. Carries
+   * the coin itself: the label is on the button wrapping the image, and an `aria-label`
+   * outranks the image's `alt`, so the alt no longer reaches a screen reader.
+   * https://w3c.github.io/accname/
+   */
+  qrZoomIn: (symbol: string) => string;
+  qrZoomOut: (symbol: string) => string;
   openInWallet: string;
   noDepositAddress: string;
   listening: string;

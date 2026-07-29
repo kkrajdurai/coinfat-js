@@ -4,6 +4,7 @@
  */
 
 import {render} from "preact";
+import {act} from "preact/test-utils";
 import {afterEach, describe, expect, it} from "vitest";
 import {CheckoutController} from "../src/core/checkout.js";
 import type {StoreInvoicePayment} from "../src/core/types.js";
@@ -66,6 +67,26 @@ function mount(
   return host;
 }
 
+function rerender(into: HTMLDivElement, node: StoreInvoicePayment): void {
+  render(
+    <PayPanel
+      payment={node}
+      controller={
+        new CheckoutController("inv_1", fakeApi({}), {pollMs: 999_999})
+      }
+      mutating={false}
+      layout="narrow"
+    />,
+    into
+  );
+}
+
+function mountQr(node = payment()) {
+  const el = mount(node);
+  const zoom = el.querySelector<HTMLButtonElement>("button[aria-expanded]")!;
+  return {el, zoom, img: zoom.querySelector<HTMLImageElement>("img")!};
+}
+
 afterEach(() => {
   // Unmount rather than just detaching: RateLock holds a 1s interval.
   if (host) {
@@ -89,6 +110,77 @@ describe("PayPanel", () => {
     expect(qr).not.toBeNull();
     // With no alt text the QR is invisible to a screen reader.
     expect(qr?.alt).toContain("BTC");
+  });
+
+  it("enlarges the QR on click, and puts it back", () => {
+    // At size-32 in a narrow modal the QR is small enough that scanning it from a
+    // phone is fiddly, and the fallback is retyping a 60-character address.
+    const {zoom, img: qr} = mountQr();
+
+    expect(zoom.getAttribute("aria-expanded")).toBe("false");
+    expect(qr.className).toContain("size-32");
+    // The label sits on the button, which outranks the image's alt — so it has to
+    // carry the coin itself or the payer loses which QR this is.
+    expect(zoom.getAttribute("aria-label")).toContain("BTC");
+
+    act(() => zoom.click());
+    expect(zoom.getAttribute("aria-expanded")).toBe("true");
+    expect(qr.className).toContain("size-44");
+    // It grows for real. A transform would paint over the coin chip and the amount.
+    expect(qr.className).not.toContain("scale-");
+
+    act(() => zoom.click());
+    expect(qr.className).toContain("size-32");
+  });
+
+  it("swallows Escape while the QR is enlarged", () => {
+    // Otherwise the key reaches the modal and starts closing the checkout — a
+    // surprising answer to "make this smaller".
+    const {el, zoom} = mountQr();
+    act(() => zoom.click());
+
+    let reachedModal = false;
+    el.addEventListener("keydown", () => (reachedModal = true));
+    act(() => {
+      zoom.dispatchEvent(
+        new KeyboardEvent("keydown", {key: "Escape", bubbles: true})
+      );
+    });
+
+    expect(zoom.getAttribute("aria-expanded")).toBe("false");
+    expect(reachedModal).toBe(false);
+  });
+
+  it("lets Escape through when the QR is not enlarged", () => {
+    // The payer expects Escape to close the checkout the rest of the time.
+    const {el, zoom} = mountQr();
+
+    let reachedModal = false;
+    el.addEventListener("keydown", () => (reachedModal = true));
+    act(() => {
+      zoom.dispatchEvent(
+        new KeyboardEvent("keydown", {key: "Escape", bubbles: true})
+      );
+    });
+
+    expect(reachedModal).toBe(true);
+  });
+
+  it("drops the zoom when the coin changes under it", () => {
+    const {el, zoom} = mountQr();
+    act(() => zoom.click());
+    expect(
+      el.querySelector("button[aria-expanded]")!.getAttribute("aria-expanded")
+    ).toBe("true");
+
+    // A coin switch swaps the image in place; the old zoom must not carry over.
+    act(() =>
+      rerender(el, payment({qr_code_url: "https://cdn.test/qr-eth.png"}))
+    );
+
+    expect(
+      el.querySelector("button[aria-expanded]")!.getAttribute("aria-expanded")
+    ).toBe("false");
   });
 
   it("labels the coin with its network", () => {

@@ -101,23 +101,24 @@ export function PayPanel({
         // Two columns only when the merchant asked for `wide` AND the container is past
         // @md (28rem). A `narrow` modal (max-w-sm, 24rem) therefore never splits; a
         // `wide` one (max-w-xl) clears the threshold and does.
+        // `auto` rather than a fixed `8rem` for the QR track: it measures the same at
+        // rest, but lets the column take the room when the payer enlarges the QR
+        // instead of the QR spilling over the details beside it.
         class={
           layout === "wide"
-            ? "grid grid-cols-1 gap-4 @md:grid-cols-[8rem_1fr] @md:gap-5"
+            ? "grid grid-cols-1 gap-4 @md:grid-cols-[auto_1fr] @md:gap-5"
             : "grid grid-cols-1 gap-4"
         }>
         <div class="flex flex-col items-center gap-2">
           {payment.qr_code_url ? (
-            <img
+            <DepositQr
+              // Keyed on the image, so a coin switch remounts it and the zoom starts
+              // fresh. An effect resetting the state instead would also fire on mount,
+              // where there is nothing to reset.
+              key={payment.qr_code_url}
               src={payment.qr_code_url}
               alt={strings.qrAlt(amounts.symbol)}
-              class="size-32 rounded-xl border border-border bg-white p-1.5"
-              // Third-party image: a broken-image glyph as the panel's focal point is
-              // worse than no QR at all.
-              onError={(event) => {
-                (event.currentTarget as HTMLImageElement).style.display =
-                  "none";
-              }}
+              symbol={amounts.symbol}
             />
           ) : null}
         </div>
@@ -292,5 +293,65 @@ function ListeningIndicator({detected}: {detected: boolean}) {
       </span>
       {detected ? strings.confirming : strings.listening}
     </div>
+  );
+}
+
+/**
+ * The deposit QR, click-to-enlarge.
+ *
+ * Not decoration: at `size-32` in a narrow modal the QR is small enough that a phone
+ * held at arm's length can struggle, and the payer's only alternative is copying a
+ * 60-character address between devices. Enlarging is the cheapest fix available.
+ *
+ * It grows for real rather than by transform. A transform paints outside the layout, so
+ * the enlarged QR landed on top of the coin chip above it and the amount below — the
+ * two things the payer most needs to keep reading. Growing the box makes the column
+ * take the space instead, and the card reflows around it.
+ */
+function DepositQr({
+  src,
+  alt,
+  symbol
+}: {
+  src: string;
+  alt: string;
+  symbol: string;
+}) {
+  const strings = useStrings();
+  const [zoomed, setZoomed] = useState(false);
+  const [broken, setBroken] = useState(false);
+
+  if (broken) {
+    // Third-party image: a broken-image glyph as the panel's focal point is worse than
+    // no QR at all.
+    return null;
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={zoomed ? strings.qrZoomOut(symbol) : strings.qrZoomIn(symbol)}
+      aria-expanded={zoomed}
+      onClick={() => setZoomed(!zoomed)}
+      onKeyDown={(event) => {
+        // Escape shrinks it. Without stopping here the key would reach the modal and
+        // start closing the checkout — a surprising answer to "make this smaller".
+        if (event.key === "Escape" && zoomed) {
+          event.stopPropagation();
+          setZoomed(false);
+        }
+      }}
+      class={`rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none ${
+        zoomed ? "cursor-zoom-out" : "cursor-zoom-in"
+      }`}>
+      <img
+        src={src}
+        alt={alt}
+        class={`rounded-xl border border-border bg-white p-1.5 transition-[width,height,box-shadow] duration-200 ease-out motion-reduce:transition-none ${
+          zoomed ? "size-44 shadow-lg shadow-black/10" : "size-32"
+        }`}
+        onError={() => setBroken(true)}
+      />
+    </button>
   );
 }

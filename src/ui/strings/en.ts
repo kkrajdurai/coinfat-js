@@ -28,6 +28,8 @@ export const en: CheckoutStrings = {
 
   sendExactly: "Send exactly",
   qrAlt: (symbol) => `QR code for the ${symbol} deposit address`,
+  qrZoomIn: (symbol) => `Enlarge the ${symbol} QR code`,
+  qrZoomOut: (symbol) => `Shrink the ${symbol} QR code`,
   openInWallet: "Open in wallet",
   noDepositAddress:
     "No deposit address is available for this network yet. Try another network, or contact the store.",
