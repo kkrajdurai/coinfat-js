@@ -3,7 +3,7 @@
  */
 
 import {render} from "preact";
-import {afterEach, describe, expect, it} from "vitest";
+import {afterEach, describe, expect, it, vi} from "vitest";
 import {CheckoutApiError} from "../src/core/api.js";
 import {CheckoutController} from "../src/core/checkout.js";
 import type {Checkout, StoreInvoicePayment} from "../src/core/types.js";
@@ -266,5 +266,49 @@ describe("the card's own Close button", () => {
     expect(shadow()!.querySelector('[role="dialog"]')).toBeTruthy();
 
     session.destroy();
+  });
+});
+
+describe("the success_url redirect", () => {
+  it("still happens when the merchant's own onCompleted throws", async () => {
+    // Their bug should not strand a payer on a paid invoice. The controller catches the
+    // throw, but by then the redirect beside it has already been skipped.
+    const assign = vi.fn();
+    const original = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {...original, assign}
+    });
+
+    try {
+      const session = new CheckoutSession(
+        fakeApi({
+          show: async () =>
+            invoice({
+              status: "completed",
+              success_url: "https://merchant.test/thanks"
+            })
+        }),
+        {
+          invoice: "inv_1",
+          display: "modal",
+          redirectOnComplete: true,
+          onCompleted: () => {
+            throw new Error("merchant bug");
+          }
+        }
+      );
+
+      session.open();
+      await sleep(30);
+
+      expect(assign).toHaveBeenCalledWith("https://merchant.test/thanks");
+      session.destroy();
+    } finally {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: original
+      });
+    }
   });
 });

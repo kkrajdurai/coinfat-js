@@ -182,12 +182,18 @@ export class CheckoutSession {
       onExpired,
       onCanceled,
       onError,
-      // The merchant's handler runs first: the redirect navigates away, so
-      // anything it wants to do must already have happened.
+      // The merchant's handler runs first: the redirect navigates away, so anything it
+      // wants to do must already have happened. In a `finally`, because the controller
+      // catches a throwing callback one frame too late to help here — the throw would
+      // already have skipped the redirect the merchant asked for, turning their own bug
+      // into a payer stranded on a paid invoice.
       onCompleted: (invoice) => {
-        onCompleted?.(invoice);
-        if (this.params.redirectOnComplete && invoice.success_url) {
-          window.location.assign(invoice.success_url);
+        try {
+          onCompleted?.(invoice);
+        } finally {
+          if (this.params.redirectOnComplete && invoice.success_url) {
+            window.location.assign(invoice.success_url);
+          }
         }
       }
     };
