@@ -202,8 +202,8 @@ function errorMessage(
 // reads as in-progress and a paid one deserves to look settled.
 const STATUS_STYLE: Record<StoreInvoiceStatus, {chip: string; dot: string}> = {
   pending: {
-    chip: "bg-primary/10 text-primary",
-    dot: "bg-primary animate-pulse"
+    chip: "bg-accent-surface/10 text-accent-surface",
+    dot: "bg-accent-surface animate-pulse"
   },
   completed: {chip: "bg-success/10 text-success", dot: "bg-success"},
   expired: {chip: "bg-muted text-muted-foreground", dot: "bg-muted-foreground"},

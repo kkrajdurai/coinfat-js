@@ -306,7 +306,7 @@ export function RateLock({target, onElapsed}: CountdownProps) {
         <div
           style={{width: `${pct}%`}}
           class={`h-full rounded-full transition-[width] duration-1000 ease-linear ${
-            low ? "bg-warning" : "bg-primary"
+            low ? "bg-warning" : "bg-accent-surface"
           }`}
         />
       </div>

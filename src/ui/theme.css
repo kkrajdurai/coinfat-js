@@ -24,6 +24,7 @@
   --color-muted: var(--cf-muted);
   --color-muted-foreground: var(--cf-muted-foreground);
   --color-primary: var(--cf-primary);
+  --color-accent-surface: var(--cf-accent-surface);
   --color-primary-foreground: var(--cf-primary-foreground);
   --color-secondary: var(--cf-secondary);
   --color-secondary-foreground: var(--cf-secondary-foreground);
@@ -47,6 +48,10 @@
      — see widget/mount.ts applyAccent) wins over the default brand orange. */
   --cf-brand: #ff8201;
   --cf-primary: var(--cf-accent, var(--cf-brand));
+  /* The accent as TEXT or a thin fill ON the card, rather than as a button fill: a
+     store branded #000000 needs a black button but not a black label on a near-black
+     card. mount.ts supplies both variants; only the surface differs. */
+  --cf-accent-surface: var(--cf-accent-on-light, var(--cf-primary));
   --cf-primary-foreground: #241f21;
 
   --cf-background: oklch(1 0 0);
@@ -92,6 +97,7 @@
   --cf-background: oklch(0.145 0 0);
   --cf-foreground: oklch(0.985 0 0);
   --cf-card: oklch(0.205 0 0);
+  --cf-accent-surface: var(--cf-accent-on-dark, var(--cf-primary));
   --cf-card-foreground: oklch(0.985 0 0);
   --cf-muted: oklch(0.269 0 0);
   --cf-muted-foreground: oklch(0.708 0 0);

@@ -312,3 +312,33 @@ describe("the success_url redirect", () => {
     }
   });
 });
+
+describe("a dark brand colour in dark mode", () => {
+  const varOf = (mount: {host: HTMLElement}, name: string) =>
+    mount.host.style.getPropertyValue(name);
+
+  it("keeps the accent as a fill but lightens it where it is text", () => {
+    // #000000 is a plausible brand. As a button fill it must stay black; as a status
+    // label on a near-black card it measured 1.15:1 — invisible.
+    const mount = createShadowHost({accent: "#000000"});
+
+    expect(varOf(mount, "--cf-accent")).toBe("#000000");
+    expect(varOf(mount, "--cf-accent-on-light")).toBe("#000000");
+    expect(varOf(mount, "--cf-accent-on-dark")).not.toBe("#000000");
+  });
+
+  it("darkens a pale brand for the light card, and leaves it for the dark one", () => {
+    // The mirror case. No single colour clears 4.5:1 against both a white and a
+    // near-black card — which is the whole reason there are two variants.
+    const mount = createShadowHost({accent: "#ffee00"});
+
+    expect(varOf(mount, "--cf-accent-on-dark")).toBe("#ffee00");
+    expect(varOf(mount, "--cf-accent-on-light")).not.toBe("#ffee00");
+  });
+
+  it("ignores an unparseable accent entirely", () => {
+    const mount = createShadowHost({accent: "rebeccapurple"});
+
+    expect(varOf(mount, "--cf-accent-on-dark")).toBe("");
+  });
+});
