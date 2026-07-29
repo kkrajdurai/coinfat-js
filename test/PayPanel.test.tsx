@@ -56,6 +56,7 @@ function mount(
   render(
     <PayPanel
       payment={node}
+      amount={{amount: "42.50", currency: "USD", scale: 2} as never}
       controller={controller}
       mutating={false}
       layout={layout}
@@ -71,6 +72,7 @@ function rerender(into: HTMLDivElement, node: StoreInvoicePayment): void {
   render(
     <PayPanel
       payment={node}
+      amount={{amount: "42.50", currency: "USD", scale: 2} as never}
       controller={
         new CheckoutController("inv_1", fakeApi({}), {pollMs: 999_999})
       }
@@ -125,7 +127,7 @@ describe("PayPanel", () => {
 
     act(() => zoom.click());
     expect(zoom.getAttribute("aria-expanded")).toBe("true");
-    expect(qr.className).toContain("size-44");
+    expect(qr.className).toContain("size-56");
     // It grows for real. A transform would paint over the coin chip and the amount.
     expect(qr.className).not.toContain("scale-");
 

@@ -50,6 +50,7 @@ function panel(node: StoreInvoicePayment) {
   return (
     <PayPanel
       payment={node}
+      amount={{amount: "42.50", currency: "USD", scale: 2} as never}
       controller={controller}
       mutating={false}
       layout="narrow"

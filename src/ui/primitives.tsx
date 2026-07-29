@@ -99,6 +99,14 @@ export function ClockIcon() {
   );
 }
 
+export function CloseIcon() {
+  return (
+    <Icon>
+      <path d="m6 6 12 12M18 6 6 18" {...CAPPED} />
+    </Icon>
+  );
+}
+
 export function CircleXIcon() {
   return (
     <Icon class="size-7">

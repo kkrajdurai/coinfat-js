@@ -8,7 +8,8 @@
 import {useEffect, useState} from "preact/hooks";
 import type {CheckoutController} from "../core/checkout.js";
 import type {WidgetLayout} from "../core/options.js";
-import type {StoreInvoicePayment} from "../core/types.js";
+import type {Checkout, StoreInvoicePayment} from "../core/types.js";
+import {AmountDue} from "./Checkout.js";
 import {formatCoin} from "./format.js";
 import {paymentAmounts, paymentNotice} from "./payment.js";
 import {
@@ -23,6 +24,8 @@ import {useStrings} from "./strings/context.js";
 
 export interface PayPanelProps {
   payment: StoreInvoicePayment;
+  /** The fiat total, re-rendered inside the split. See Checkout's AmountDue. */
+  amount: Checkout["amount"];
   controller: CheckoutController;
   /** A select/requote is in flight. */
   mutating: boolean;
@@ -41,6 +44,7 @@ const NOTICE_TONE = {
 
 export function PayPanel({
   payment,
+  amount,
   controller,
   mutating,
   layout,
@@ -66,36 +70,49 @@ export function PayPanel({
     requote();
   };
 
+  const wide = layout === "wide";
+
+  // Wide moves this into the QR column, so the grid can start directly under the
+  // amount instead of a full-width strip pushing it down past an empty half-card.
+  const coinRow = (
+    <div
+      class={
+        wide
+          ? "flex flex-col items-center gap-1"
+          : "flex items-center justify-between gap-2"
+      }>
+      <span
+        // Above the grid, not in it: as a grid item its width fed an `auto`
+        // track, so a long network name stole room from the address column.
+        class="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full border border-border bg-muted/40 py-1 ps-1 pe-2.5 text-xs font-medium">
+        {payment.wallet.svg_icon ? (
+          <img
+            src={payment.wallet.svg_icon}
+            alt=""
+            class="size-4 shrink-0 rounded-full"
+          />
+        ) : null}
+        <span class="truncate">
+          {amounts.symbol}
+          {payment.wallet_network ? ` · ${payment.wallet_network.name}` : ""}
+        </span>
+      </span>
+
+      {onChangeCoin ? (
+        <button
+          type="button"
+          onClick={onChangeCoin}
+          class="inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <SwapIcon />
+          {strings.changeCoin}
+        </button>
+      ) : null}
+    </div>
+  );
+
   return (
     <div class="mt-4 space-y-4">
-      <div class="flex items-center justify-between gap-2">
-        <span
-          // Above the grid, not in it: as a grid item its width fed an `auto`
-          // track, so a long network name stole room from the address column.
-          class="inline-flex min-w-0 items-center gap-1.5 rounded-full border border-border bg-muted/40 py-1 ps-1 pe-2.5 text-xs font-medium">
-          {payment.wallet.svg_icon ? (
-            <img
-              src={payment.wallet.svg_icon}
-              alt=""
-              class="size-4 shrink-0 rounded-full"
-            />
-          ) : null}
-          <span class="truncate">
-            {amounts.symbol}
-            {payment.wallet_network ? ` · ${payment.wallet_network.name}` : ""}
-          </span>
-        </span>
-
-        {onChangeCoin ? (
-          <button
-            type="button"
-            onClick={onChangeCoin}
-            class="inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <SwapIcon />
-            {strings.changeCoin}
-          </button>
-        ) : null}
-      </div>
+      {wide ? null : coinRow}
 
       <div
         // Two columns only when the merchant asked for `wide` AND the container is past
@@ -109,7 +126,10 @@ export function PayPanel({
             ? "grid grid-cols-1 gap-4 @md:grid-cols-[auto_1fr] @md:gap-5"
             : "grid grid-cols-1 gap-4"
         }>
-        <div class="flex flex-col items-center gap-2">
+        <div
+          // Centred against the details beside it rather than pinned to the top, so a
+          // short QR column does not leave a wedge of empty card under it.
+          class="flex flex-col items-center gap-2.5 @md:justify-center">
           {payment.qr_code_url ? (
             <DepositQr
               // Keyed on the image, so a coin switch remounts it and the zoom starts
@@ -119,11 +139,20 @@ export function PayPanel({
               src={payment.qr_code_url}
               alt={strings.qrAlt(amounts.symbol)}
               symbol={amounts.symbol}
+              wide={wide}
             />
           ) : null}
+          {wide ? coinRow : null}
         </div>
 
-        <div class="min-w-0 space-y-3">
+        <div class="flex min-w-0 flex-col justify-center space-y-3">
+          {wide ? (
+            // The split's copy — see Checkout, which hides its own at the same breakpoint.
+            <div class="hidden @md:block">
+              <AmountDue amount={amount} />
+            </div>
+          ) : null}
+
           <div class="space-y-1">
             <p class="text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
               {strings.sendExactly}
@@ -311,11 +340,14 @@ function ListeningIndicator({detected}: {detected: boolean}) {
 function DepositQr({
   src,
   alt,
-  symbol
+  symbol,
+  wide
 }: {
   src: string;
   alt: string;
   symbol: string;
+  /** The two-column arrangement has room for a QR that is worth scanning. */
+  wide?: boolean;
 }) {
   const strings = useStrings();
   const [zoomed, setZoomed] = useState(false);
@@ -348,7 +380,11 @@ function DepositQr({
         src={src}
         alt={alt}
         class={`rounded-xl border border-border bg-white p-1.5 transition-[width,height,box-shadow] duration-200 ease-out motion-reduce:transition-none ${
-          zoomed ? "size-44 shadow-lg shadow-black/10" : "size-32"
+          zoomed
+            ? "size-56 shadow-lg shadow-black/10"
+            : wide
+              ? "size-44"
+              : "size-32"
         }`}
         onError={() => setBroken(true)}
       />

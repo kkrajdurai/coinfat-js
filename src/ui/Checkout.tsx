@@ -9,6 +9,7 @@ import {
   type Wallet
 } from "../core/types.js";
 import {CoinSelect, useCoinSwitch} from "./CoinSelect.js";
+import {CloseIcon} from "./primitives.js";
 import {formatMoney} from "./format.js";
 import {PayPanel} from "./PayPanel.js";
 import {Terminal, terminalMessage} from "./Terminal.js";
@@ -92,7 +93,7 @@ function InvoiceCard({
   controller: CheckoutController;
   onRequestClose?: () => void;
 }) {
-  const {locale, strings} = useI18n();
+  const strings = useStrings();
   const requestClose = useCloseRequest();
   const {store, active_payment: payment} = invoice;
   // Terminal invoices keep their `active_payment`. Without this gate a settled invoice
@@ -114,7 +115,22 @@ function InvoiceCard({
             {store.name}
           </span>
         </div>
-        <StatusBadge status={invoice.status} />
+        <div class="flex shrink-0 items-center gap-1.5">
+          <StatusBadge status={invoice.status} />
+          {onRequestClose ? (
+            <button
+              type="button"
+              aria-label={strings.close}
+              // Where a payer looks for it, and it costs no row of its own — the
+              // footer strip it used to occupy was mostly empty space. Inside a modal
+              // this is the guarded close, so the warning cannot be walked past by
+              // using the card's own exit instead of the backdrop.
+              onClick={requestClose ?? onRequestClose}
+              class="-me-1 inline-flex rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <CloseIcon />
+            </button>
+          ) : null}
+        </div>
       </header>
 
       <p
@@ -140,11 +156,18 @@ function InvoiceCard({
         <Terminal invoice={invoice} />
       ) : (
         <>
-          <div class="mt-4">
-            <p class="text-xs text-muted-foreground">{strings.amountDue}</p>
-            <p class="font-heading text-3xl font-semibold tracking-tight">
-              {formatMoney(invoice.amount, locale)}
-            </p>
+          <div
+            // Hidden once the pay panel splits in two, where it renders its own copy
+            // at the top of the details column — otherwise it sits full-width above
+            // the split with an empty half-card beside it. Duplicated and
+            // container-queried rather than moved, so the stacked order stays
+            // amount-first no matter which column the DOM puts first.
+            class={
+              layout === "wide" && payment && !picking
+                ? "mt-4 @md:hidden"
+                : "mt-4"
+            }>
+            <AmountDue amount={invoice.amount} />
           </div>
 
           {picking ? (
@@ -159,6 +182,7 @@ function InvoiceCard({
           ) : payment ? (
             <PayPanel
               payment={payment}
+              amount={invoice.amount}
               controller={controller}
               mutating={mutating}
               layout={layout}
@@ -167,18 +191,20 @@ function InvoiceCard({
           ) : null}
         </>
       )}
-
-      {onRequestClose ? (
-        <button
-          type="button"
-          class="mt-4 inline-flex rounded-md px-1 py-0.5 text-xs text-muted-foreground underline-offset-2 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          // Inside a modal this is the guarded close, so the warning cannot be walked
-          // past by using the card's own exit instead of the backdrop.
-          onClick={requestClose ?? onRequestClose}>
-          {strings.close}
-        </button>
-      ) : null}
     </div>
+  );
+}
+
+export function AmountDue({amount}: {amount: Invoice["amount"]}) {
+  const {locale, strings} = useI18n();
+
+  return (
+    <>
+      <p class="text-xs text-muted-foreground">{strings.amountDue}</p>
+      <p class="font-heading text-3xl font-semibold tracking-tight">
+        {formatMoney(amount, locale)}
+      </p>
+    </>
   );
 }
 

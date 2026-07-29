@@ -254,8 +254,8 @@ describe("the card's own Close button", () => {
 
     const shadow = () =>
       document.querySelector("body > [data-coinfat]")?.shadowRoot ?? null;
-    const close = Array.from(shadow()!.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "Close"
+    const close = shadow()!.querySelector<HTMLButtonElement>(
+      'button[aria-label="Close"]'
     )!;
     expect(close).toBeTruthy();
 
