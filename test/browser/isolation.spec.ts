@@ -1,8 +1,9 @@
 /**
- * The three guarantees jsdom cannot judge, having no CSS, no layout and no focus model:
- * style isolation both ways across the shadow boundary, the modal's Tab focus trap, and
- * the attribution badge never painting over the card (it is `pointer-events-none`, so
- * an overlap silently swallows clicks on whatever it covers).
+ * The guarantees jsdom cannot judge, having no CSS, no layout and no focus model: style
+ * isolation both ways across the shadow boundary, the modal's Tab focus trap, the
+ * attribution badge never painting over the card (it is `pointer-events-none`, so an
+ * overlap silently swallows clicks on whatever it covers), and the deposit address
+ * never showing the payer less than the whole of it without saying so.
  *
  * Hermetic: the built IIFE bundle is served and every API call is fulfilled from a
  * fixture. Build first — the spec loads `dist/coinfat.iife.js`.
@@ -263,4 +264,159 @@ test.describe("the attribution badge", () => {
       expect(probe.hit).toContain("fixed inset-0");
     }
   });
+});
+
+// The address is the string a payer sends money to, so the bar is not "looks tidy" but
+// "cannot mislead". Two failures live here and neither shows at a single width: a half
+// sized by BASIS holds half the field even when the address fits, splitting it across a
+// hole; and halves that differ by one character have a band where one overflows and the
+// other does not, so a clipping half can drop a character with no ellipsis on screen.
+//
+// Both parities are swept, because the second failure needs an odd-length middle and
+// the fixture's address happens to divide evenly — with only that one, the bug renders
+// and the test still passes.
+test.describe("the deposit address", () => {
+  for (const [parity, address] of [
+    ["even", "0x000000000000000000000000000000000000dEaD"],
+    ["odd", "tb1q7q8ru09f7awg7v2mgmhw6zvnhtnsqpm28wks48r9cmmrn6ax6trstl6hw"]
+  ]) {
+    test(`shows all of it, or says it has not (${parity} split)`, async ({
+      page
+    }) => {
+      const invoice = JSON.parse(JSON.stringify(fixtures.invoice)) as {
+        active_payment: {address: string};
+      };
+      invoice.active_payment.address = address;
+      await page.route(`**/checkout/${ULID}`, (route) =>
+        route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify(invoice)
+        })
+      );
+      await page.reload();
+      await page.waitForFunction(() => "Coinfat" in window);
+
+      await page.evaluate(
+        ({api, ulid}) =>
+          window
+            .Coinfat({apiBase: api})
+            .checkout({invoice: ulid, display: "inline", mount: "#btn-mount"}),
+        {api: API, ulid: ULID}
+      );
+
+      const field = page.locator("#btn-mount [data-coinfat]");
+      await expect
+        .poll(() =>
+          field.evaluate(
+            (host) =>
+              !!(
+                host as HTMLElement & {shadowRoot: ShadowRoot}
+              ).shadowRoot.querySelector("span.font-mono")
+          )
+        )
+        .toBe(true);
+
+      // Asserted rather than swept for. Both properties are what MAKE the sweep come
+      // back clean, and a sweep only meets them at the widths it happens to sample —
+      // the band where the halves part company is 14px wide and moves with the layout.
+      const contract = await field.evaluate((host) => {
+        const halves = [
+          ...(
+            host as HTMLElement & {shadowRoot: ShadowRoot}
+          ).shadowRoot.querySelector("span.font-mono")!.children
+        ] as HTMLElement[];
+        return halves.map((el) => {
+          const s = getComputedStyle(el);
+          return {ellipsis: s.textOverflow, direction: s.direction};
+        });
+      });
+
+      // Every half must be able to say it is hiding something: the two differ by a
+      // character on an odd address, so there are widths where only one overflows, and
+      // a half that merely clips drops a character with nothing on screen to show it.
+      expect(contract.map((h) => h.ellipsis)).toEqual(["ellipsis", "ellipsis"]);
+      // And the closing half must run rtl, or its overflow falls at the far end and
+      // the emphasised tail — the part a payer checks — is what gets hidden.
+      expect(contract.map((h) => h.direction)).toEqual(["ltr", "rtl"]);
+
+      const offences: string[] = [];
+      const widths = new Set<number>();
+
+      // Swept until the address comfortably fits, not to a round number: every
+      // interesting transition — both halves overflowing, one of them, neither — has
+      // to be crossed, and the band where only one overflows is barely 14px wide.
+      let everFits = false;
+
+      for (let width = 180; width <= 1000; width += 2) {
+        // Resize and measure in ONE evaluate: split across two, a poll can re-render
+        // the panel in between and the measurement lands on detached nodes.
+        const probe = await field.evaluate((host, w) => {
+          document.getElementById("btn-mount")!.style.width = `${w}px`;
+          const root = (host as HTMLElement & {shadowRoot: ShadowRoot})
+            .shadowRoot;
+          const halves = [
+            ...root.querySelector("span.font-mono")!.children
+          ] as HTMLElement[];
+
+          const hidden = (el: HTMLElement) =>
+            el.scrollWidth > el.clientWidth + 0.5;
+          const marked = (el: HTMLElement) =>
+            getComputedStyle(el).textOverflow === "ellipsis";
+
+          // Painted text extents, not box extents: two boxes pinned at half the field
+          // always touch, so box geometry cannot see the hole between the two runs.
+          const edge = (el: HTMLElement, side: "left" | "right") => {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const rects = [...range.getClientRects()];
+            // Mid-render this can be empty, and Math.max of nothing is -Infinity,
+            // which would arrive as a phantom hole rather than a missed sample.
+            if (!rects.length) return null;
+            return side === "right"
+              ? Math.max(...rects.map((r) => r.right))
+              : Math.min(...rects.map((r) => r.left));
+          };
+
+          const anyHidden = halves.some(hidden);
+          const [right, left] = [
+            edge(halves[0], "right"),
+            edge(halves[1], "left")
+          ];
+          const measurable = right !== null && left !== null;
+
+          return {
+            // Proof the resize landed. Passing no argument to evaluate() left this
+            // "undefinedpx" once, so every width measured the same untouched layout
+            // and the sweep could not fail.
+            width: root.querySelector("span.font-mono")!.clientWidth,
+            measured: measurable,
+            fits: !anyHidden,
+            silent: anyHidden && !halves.some((el) => hidden(el) && marked(el)),
+            gap: anyHidden || !measurable ? 0 : Math.round(left - right)
+          };
+        }, width);
+
+        widths.add(probe.width);
+        everFits ||= probe.fits;
+
+        if (!probe.measured && !probe.silent) {
+          offences.push(`${width}px: could not measure`);
+        }
+        if (probe.silent) {
+          offences.push(`${width}px: character hidden with no ellipsis`);
+        }
+        if (probe.gap > 2) {
+          offences.push(`${width}px: ${probe.gap}px hole mid-address`);
+        }
+      }
+
+      expect(offences.slice(0, 5)).toEqual([]);
+      // The sweep has to have actually swept: a single distinct field width means the
+      // resize never took and nothing above was really tested.
+      expect(widths.size).toBeGreaterThan(50);
+      // And swept far enough to leave the overflowing regime, or the widths where the
+      // two halves part company were never reached.
+      expect(everFits).toBe(true);
+    });
+  }
 });

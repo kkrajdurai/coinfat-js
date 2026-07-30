@@ -3,6 +3,7 @@
 import {describe, expect, it} from "vitest";
 import type {StoreInvoicePayment} from "../src/core/types.js";
 import {
+  addressParts,
   formatDuration,
   paymentAmounts,
   paymentNotice,
@@ -171,5 +172,37 @@ describe("countdown", () => {
   it("treats an unparseable deadline as already elapsed", () => {
     // Better to requote immediately than to render "NaN:NaN" forever.
     expect(remainingUntil("not a date")).toBe(0);
+  });
+});
+
+describe("addressParts", () => {
+  it("anchors both ends and leaves the middle to be ellipsed", () => {
+    const address =
+      "tb1q7q8ru09f7awg7v2mgmhw6zvnhtnsqpm28wks48r9cmmrn6ax6trstl6hw3";
+    const {head, lead, trail, tail} = addressParts(address);
+
+    expect(head).toBe("tb1q7q8r");
+    expect(tail).toBe("rstl6hw3");
+    // Nothing is dropped — the middle is still there for CSS to shorten, not us.
+    expect(head + lead + trail + tail).toBe(address);
+    // Halved to within one character, so the ellipsis lands mid-field rather than
+    // hard against the closing characters.
+    expect(Math.abs(lead.length - trail.length)).toBeLessThanOrEqual(1);
+  });
+
+  it("scales the anchor with the address, within a narrow range", () => {
+    // A Tron address (34) and a bech32 one (62) should not get the same weighting,
+    // but the shape has to stay recognisable across coins.
+    expect(addressParts("T".repeat(34)).head).toHaveLength(6);
+    expect(addressParts("0x" + "a".repeat(40)).head).toHaveLength(6);
+    expect(addressParts("b".repeat(62)).head).toHaveLength(8);
+    expect(addressParts("c".repeat(20)).head).toHaveLength(4);
+  });
+
+  it("leaves a short address whole rather than mostly bold", () => {
+    const {head, lead, trail, tail} = addressParts("abcdefghij");
+
+    expect(head).toBe("abcdefghij");
+    expect(lead + trail + tail).toBe("");
   });
 });

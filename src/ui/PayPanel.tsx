@@ -11,7 +11,7 @@ import type {WidgetLayout} from "../core/options.js";
 import type {Checkout, StoreInvoicePayment} from "../core/types.js";
 import {AmountDue} from "./Checkout.js";
 import {formatCoin} from "./format.js";
-import {paymentAmounts, paymentNotice} from "./payment.js";
+import {addressParts, paymentAmounts, paymentNotice} from "./payment.js";
 import {
   Button,
   CopyField,
@@ -172,9 +172,7 @@ export function PayPanel({
               text={payment.address}
               label={strings.copyAddress}
               class="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5">
-              <span class="min-w-0 flex-1 truncate font-mono text-xs">
-                {payment.address}
-              </span>
+              <DepositAddress address={payment.address} />
             </CopyField>
           ) : (
             // A null address means the provider has none provisioned — a real
@@ -322,6 +320,53 @@ function ListeningIndicator({detected}: {detected: boolean}) {
       </span>
       {detected ? strings.confirming : strings.listening}
     </div>
+  );
+}
+
+/**
+ * The deposit address, ellipsed through the middle rather than the end.
+ *
+ * There is no CSS for a middle ellipsis, but there is no need for one: the head is
+ * allowed to shrink and truncate while the tail is not, so the ellipsis lands between
+ * them and both ends stay on screen. Doing it this way rather than cutting the string
+ * by character count means it responds to the width the card actually has — which
+ * changes with the layout, the viewport, and the payer's font size — instead of a
+ * guess made in JavaScript.
+ *
+ * The full address stays in the DOM, so it is what a screen reader reads and what the
+ * copy button puts on the clipboard. Only the pixels are shortened.
+ */
+function DepositAddress({address}: {address: string}) {
+  const {head, lead, trail, tail} = addressParts(address);
+
+  return (
+    <span class="flex min-w-0 flex-1 font-mono text-xs">
+      <span
+        // `max-w-1/2` rather than a half BASIS: a basis fixes the box at half the
+        // field whatever it holds, so an address that fits paints its two halves at
+        // opposite ends with a hole between them — and a hole is indistinguishable
+        // from hidden characters. Capped instead, each half is content-sized until
+        // the pair actually runs out of room.
+        class="max-w-1/2 truncate">
+        <span class="font-semibold text-foreground">{head}</span>
+        {lead}
+      </span>
+      <span
+        // `direction: rtl` moves this half's overflow to its start, which CSS
+        // otherwise cannot do. The characters keep their order: an address is
+        // alphanumeric throughout, and letters and digits are strong left-to-right,
+        // so only the clipped end moves.
+        //
+        // BOTH halves ellipse. Letting one merely clip is tidier when they overflow
+        // together, but the halves are a character apart on an odd-length address, so
+        // there is a band of widths where only one is overflowing — and there the
+        // clipping half drops a character with nothing on screen to say so. A payer
+        // comparing against their wallet would read it as complete.
+        class="max-w-1/2 truncate [direction:rtl]">
+        {trail}
+        <span class="font-semibold text-foreground">{tail}</span>
+      </span>
+    </span>
   );
 }
 

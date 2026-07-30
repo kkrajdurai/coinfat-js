@@ -89,3 +89,51 @@ export function remainingUntil(iso: string, now = Date.now()): number {
   const target = new Date(iso).getTime();
   return Number.isFinite(target) ? Math.max(0, target - now) : 0;
 }
+
+export interface AddressParts {
+  /** Emphasised opening characters. */
+  head: string;
+  /** Unremarkable middle, first half — trimmed from its END as space runs out. */
+  lead: string;
+  /** Unremarkable middle, second half — trimmed from its START. */
+  trail: string;
+  /** Emphasised closing characters. */
+  tail: string;
+}
+
+/**
+ * Split a deposit address into the two ends a payer actually checks and the middle
+ * they don't. Nobody reads sixty base32 characters; they compare the first few and
+ * the last few against their wallet, so those are the parts worth weighting.
+ *
+ * The anchor grows a little with the address — 4 characters is proportionate on a
+ * 34-character Tron address and lost on a 62-character bech32 one — but stays inside
+ * a narrow range, because a shape the payer recognises across coins is worth more
+ * than exact proportionality.
+ *
+ * The middle comes back in two halves so the ellipsis can sit at the CENTRE of the
+ * field: each half gives up characters at the same rate, rather than the opening
+ * running as far as it fits and the cut landing hard against the closing characters.
+ *
+ * How much of each half survives is deliberately NOT decided here: it depends on the
+ * width the card happens to have, which is a question only CSS can answer.
+ */
+export function addressParts(address: string): AddressParts {
+  const anchor = address.length >= 48 ? 8 : address.length >= 32 ? 6 : 4;
+
+  // Too short to be worth carving up: emphasis over most of the string is just bold
+  // text, and there is nothing in the middle to lose.
+  if (address.length < anchor * 3) {
+    return {head: address, lead: "", trail: "", tail: ""};
+  }
+
+  const body = address.slice(anchor, -anchor);
+  const half = Math.ceil(body.length / 2);
+
+  return {
+    head: address.slice(0, anchor),
+    lead: body.slice(0, half),
+    trail: body.slice(half),
+    tail: address.slice(-anchor)
+  };
+}
