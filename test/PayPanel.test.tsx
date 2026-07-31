@@ -264,6 +264,43 @@ describe("PayPanel", () => {
     );
   });
 
+  it("warns which coin and chain the address accepts", () => {
+    expect(mount(payment()).textContent).toContain("Send only BTC on Bitcoin.");
+  });
+
+  it("names the chain, not the pair, for a token payment", () => {
+    // The shape the API really sends for USDT-on-Tron: the network is named after the
+    // pair, and the chain's plain name is on the fee wallet.
+    const el = mount(
+      payment({
+        wallet: {symbol: "usdt", scale: 6, precision: 6},
+        wallet_network: {
+          id: "usdt-tron",
+          name: "USDT (Tron)",
+          execution_fee_wallet: {name: "Tron"}
+        }
+      } as never)
+    );
+
+    expect(el.textContent).toContain("Send only USDT on Tron.");
+    expect(el.textContent).not.toContain("on USDT (Tron)");
+    // And the chip beside it, which would otherwise say "USDT · USDT (Tron)".
+    expect(el.textContent).toContain("USDT · Tron");
+  });
+
+  it("drops the chain warning when there is no address to qualify", () => {
+    // Both halves of the guard: without an address the warning would be advice about
+    // a field that is not on screen, and without a network there is no "only" to name.
+    expect(
+      mount(payment({address: null, deposit_uri: null, qr_code_url: null}))
+        .textContent
+    ).not.toContain("Send only");
+
+    expect(mount(payment({wallet_network: null})).textContent).not.toContain(
+      "Send only"
+    );
+  });
+
   it("offers change-coin only when a handler is given, and calls it", () => {
     // No handler (the locked, post-detection case in Checkout): no affordance.
     expect(mount(payment()).textContent).not.toContain("Change coin");

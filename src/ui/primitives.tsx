@@ -107,6 +107,15 @@ export function CloseIcon() {
   );
 }
 
+export function AlertIcon() {
+  return (
+    <Icon class="size-3.5 shrink-0">
+      <path d="M12 4 2.5 20h19L12 4Z" {...ROUNDED} />
+      <path d="M12 10v4m0 3v.01" {...CAPPED} />
+    </Icon>
+  );
+}
+
 export function CircleXIcon() {
   return (
     <Icon class="size-7">

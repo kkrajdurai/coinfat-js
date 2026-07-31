@@ -4,6 +4,7 @@ import {describe, expect, it} from "vitest";
 import type {StoreInvoicePayment} from "../src/core/types.js";
 import {
   addressParts,
+  chainName,
   formatDuration,
   paymentAmounts,
   paymentNotice,
@@ -204,5 +205,30 @@ describe("addressParts", () => {
 
     expect(head).toBe("abcdefghij");
     expect(lead + trail + tail).toBe("");
+  });
+});
+
+describe("chainName", () => {
+  const network = (over: object) =>
+    ({id: "n1", name: "USDT (Tron)", ...over}) as never;
+
+  it("names the chain, not the pair, on a token network", () => {
+    // The backend names these after the pair, so the raw name yields the nonsense
+    // "Send only USDT on USDT (Tron)".
+    expect(chainName(network({execution_fee_wallet: {name: "Tron"}}))).toBe(
+      "Tron"
+    );
+  });
+
+  it("keeps the network's own name on a native chain", () => {
+    expect(
+      chainName(network({name: "BNB Smart Chain", execution_fee_wallet: null}))
+    ).toBe("BNB Smart Chain");
+  });
+
+  it("falls back rather than labelling a chain with an empty name", () => {
+    expect(
+      chainName(network({name: "Bitcoin", execution_fee_wallet: {name: ""}}))
+    ).toBe("Bitcoin");
   });
 });

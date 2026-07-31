@@ -55,6 +55,11 @@ export interface CheckoutStrings {
   qrZoomIn: (symbol: string) => string;
   qrZoomOut: (symbol: string) => string;
   openInWallet: string;
+  /**
+   * The chain warning under the deposit address. Both arguments are load-bearing: the
+   * address is only good for this coin on this network, and the loss is unrecoverable.
+   */
+  sendOnly: (symbol: string, network: string) => string;
   noDepositAddress: string;
   listening: string;
   confirming: string;

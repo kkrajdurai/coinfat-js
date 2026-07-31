@@ -11,8 +11,14 @@ import type {WidgetLayout} from "../core/options.js";
 import type {Checkout, StoreInvoicePayment} from "../core/types.js";
 import {AmountDue} from "./Checkout.js";
 import {formatCoin} from "./format.js";
-import {addressParts, paymentAmounts, paymentNotice} from "./payment.js";
 import {
+  addressParts,
+  chainName,
+  paymentAmounts,
+  paymentNotice
+} from "./payment.js";
+import {
+  AlertIcon,
   Button,
   CopyField,
   RateLock,
@@ -41,6 +47,44 @@ const NOTICE_TONE = {
   // Fixed info blue, not the brand accent — see --cf-info in theme.css.
   info: "bg-info/10 text-info"
 } as const;
+
+/**
+ * The chain warning: this address takes one coin on one network, and anything else sent
+ * to it is gone. Deliberately at the head of the panel rather than a note by the address
+ * — it qualifies the choice the payer has just made, and it has to be read before they
+ * start, not while they are already pasting. (It sits beside the coin chip in `narrow`
+ * and above it in `wide`, where the chip moves into the QR column.)
+ *
+ * Tinted, unlike the muted fine print elsewhere. It is the one line on the panel whose
+ * cost is unrecoverable, and the tint is what stops it reading as boilerplate. It sits
+ * apart from `NOTICE_TONE` on purpose: those mark something that just changed and use
+ * the fill at full strength, so a permanent block of the same weight would dull them.
+ *
+ * Rendered only with both an address and a network, since without either there is no
+ * "only" to state.
+ */
+function ChainWarning({
+  payment,
+  symbol
+}: {
+  payment: StoreInvoicePayment;
+  symbol: string;
+}) {
+  const strings = useStrings();
+
+  if (!payment.address || !payment.wallet_network) {
+    return null;
+  }
+
+  return (
+    <p class="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/5 px-3 py-2 text-xs leading-snug">
+      <span class="mt-px text-warning">
+        <AlertIcon />
+      </span>
+      {strings.sendOnly(symbol, chainName(payment.wallet_network))}
+    </p>
+  );
+}
 
 export function PayPanel({
   payment,
@@ -93,8 +137,9 @@ export function PayPanel({
           />
         ) : null}
         <span class="truncate">
-          {amounts.symbol}
-          {payment.wallet_network ? ` · ${payment.wallet_network.name}` : ""}
+          {payment.wallet_network
+            ? `${amounts.symbol} · ${chainName(payment.wallet_network)}`
+            : amounts.symbol}
         </span>
       </span>
 
@@ -113,6 +158,8 @@ export function PayPanel({
   return (
     <div class="mt-4 space-y-4">
       {wide ? null : coinRow}
+
+      <ChainWarning payment={payment} symbol={amounts.symbol} />
 
       <div
         // Two columns only when the merchant asked for `wide` AND the container is past

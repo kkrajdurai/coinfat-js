@@ -55,9 +55,10 @@ export interface WalletNetwork {
   /** The coin this network belongs to. */
   wallet: Wallet;
   /**
-   * The chain's native coin, which the execution (gas) fee is paid in. Null where
-   * there is no separate fee coin. Take the network's icon/symbol from
-   * `execution_fee_wallet ?? wallet`: USDT-on-Tron is marked TRX, not USDT.
+   * The chain's native coin, which the execution (gas) fee is paid in. Null where there
+   * is no separate fee coin. Take the network's icon, symbol and chain NAME from it:
+   * USDT-on-Tron is marked TRX and runs on "Tron", while `name` above calls the network
+   * itself "USDT (Tron)".
    */
   execution_fee_wallet: Wallet | null;
   created_at: string;

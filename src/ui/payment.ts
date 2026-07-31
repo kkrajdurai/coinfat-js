@@ -8,7 +8,21 @@
  * quotes it. The only arithmetic left is `progress`, which is display-only.
  */
 
-import type {StoreInvoicePayment} from "../core/types.js";
+import type {StoreInvoicePayment, WalletNetwork} from "../core/types.js";
+
+/**
+ * The chain a network settles on, named the way a payer would recognise it.
+ *
+ * `wallet_network.name` is not that name on a token network. The backend names those
+ * after the pair — "USDT (Tron)", "USDC (Polygon)" — so interpolating it verbatim
+ * yields "Send only USDT on USDT (Tron)". The chain's own coin carries the plain name
+ * ("Tron", "Polygon"), and it is the same `execution_fee_wallet` the network takes its
+ * icon from. On a native network there is no fee coin and the network name is already
+ * the chain, so it falls through.
+ */
+export function chainName(network: WalletNetwork): string {
+  return network.execution_fee_wallet?.name || network.name;
+}
 
 export interface PaymentAmounts {
   symbol: string;

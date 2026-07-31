@@ -31,6 +31,8 @@ export const en: CheckoutStrings = {
   qrZoomIn: (symbol) => `Enlarge the ${symbol} QR code`,
   qrZoomOut: (symbol) => `Shrink the ${symbol} QR code`,
   openInWallet: "Open in wallet",
+  sendOnly: (symbol, network) =>
+    `Send only ${symbol} on ${network}. Sending other tokens may result in loss of funds.`,
   noDepositAddress:
     "No deposit address is available for this network yet. Try another network, or contact the store.",
   listening: "Listening for your payment…",
