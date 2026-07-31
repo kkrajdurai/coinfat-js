@@ -283,6 +283,11 @@ test.describe("the deposit address", () => {
     test(`shows all of it, or says it has not (${parity} split)`, async ({
       page
     }) => {
+      // Four hundred-odd resize-and-measure round trips. It clears the default
+      // timeout when run alone, but not in Firefox against the other two engines
+      // competing for the machine — and a timeout here reads as a layout failure.
+      test.slow();
+
       const invoice = JSON.parse(JSON.stringify(fixtures.invoice)) as {
         active_payment: {address: string};
       };
