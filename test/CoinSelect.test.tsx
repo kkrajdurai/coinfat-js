@@ -198,4 +198,20 @@ describe("CoinSelect", () => {
     click("Try again");
     expect(flow.walletsCalls()).toBe(1);
   });
+
+  it("lists a token network by its chain, not by the pair", () => {
+    // The backend names these after the pair — "USDT (Tron)" — which repeats the coin
+    // the payer has just picked. The chain's plain name is on the fee wallet.
+    const tron = net("usdt-tron", "USDT (Tron)");
+    (tron as {execution_fee_wallet: unknown}).execution_fee_wallet = {
+      name: "Tron"
+    };
+
+    const flow = mount({
+      wallets: [coin("usdt", "USDT", "Tether USD", [tron])]
+    });
+
+    expect(flow.el.textContent).toContain("Tron");
+    expect(flow.el.textContent).not.toContain("USDT (Tron)");
+  });
 });

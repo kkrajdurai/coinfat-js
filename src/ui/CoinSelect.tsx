@@ -18,6 +18,7 @@ import type {
   Wallet,
   WalletNetwork
 } from "../core/types.js";
+import {chainName} from "./payment.js";
 import {ArrowLeftIcon, Button, CheckIcon, Spinner} from "./primitives.js";
 import {useStrings} from "./strings/context.js";
 
@@ -343,7 +344,7 @@ function NetworkPicker({
                   />
                 ) : null}
                 <span class="min-w-0 flex-1 truncate text-sm font-medium">
-                  {network.name}
+                  {chainName(network)}
                 </span>
                 {selected ? (
                   <span class="text-primary">
