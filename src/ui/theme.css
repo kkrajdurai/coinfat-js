@@ -158,6 +158,18 @@
   animation: cf-burst 0.6s 0.15s ease-out both;
 }
 
+/* The closing half of the deposit address. A class rather than utilities because the
+   point is two declarations of ONE property in ONE rule: engines without `round()`
+   keep the 50% cap, the rest round it down to whole characters so the clip lands on a
+   character boundary instead of slicing a glyph in half. As utilities the two land in
+   separate rules and Tailwind emits `max-w-1/2` last, so the fallback wins everywhere
+   and the rounding never applies — measured, not assumed. `1ch` is the advance width
+   of the monospace face the field is set in. */
+.cf-addr-tail {
+  max-width: 50%;
+  max-width: round(down, 50%, 1ch);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cf-pop,
   .cf-check-draw,

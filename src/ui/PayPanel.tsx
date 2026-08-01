@@ -404,12 +404,20 @@ function DepositAddress({address}: {address: string}) {
         // alphanumeric throughout, and letters and digits are strong left-to-right,
         // so only the clipped end moves.
         //
-        // BOTH halves ellipse. Letting one merely clip is tidier when they overflow
-        // together, but the halves are a character apart on an odd-length address, so
-        // there is a band of widths where only one is overflowing — and there the
-        // clipping half drops a character with nothing on screen to say so. A payer
-        // comparing against their wallet would read it as complete.
-        class="max-w-1/2 truncate [direction:rtl]">
+        // This half CLIPS where the other ellipses, because two ellipses meeting in
+        // the middle is not a middle ellipsis — each box also drops the glyph it can
+        // only paint half of, so the pair renders "…  …" with a hole between them that
+        // reads as missing characters rather than as one truncation.
+        //
+        // Nothing is dropped silently by clipping here: `addressParts` splits one
+        // character past the middle, so this half is always the strictly shorter of the
+        // two — by one character on an odd body, two on an even one — and cannot run out
+        // of room before the half beside it, the one carrying the ellipsis.
+        //
+        // `cf-addr-tail` caps it at half the field, rounded down to whole characters so
+        // the clip lands between glyphs rather than through one. It carries its own 50%
+        // fallback, which is why it is a class and not a utility — see theme.css.
+        class="cf-addr-tail overflow-hidden text-clip whitespace-nowrap [direction:rtl]">
         {trail}
         <span class="font-semibold text-foreground">{tail}</span>
       </span>

@@ -142,7 +142,13 @@ export function addressParts(address: string): AddressParts {
   }
 
   const body = address.slice(anchor, -anchor);
-  const half = Math.ceil(body.length / 2);
+  // One character PAST half, so the opening piece is always strictly the longer of the
+  // two. Only that piece carries an ellipsis; the closing one clips, which is safe only
+  // while it cannot run out of room first. Split evenly the two are the same width, and
+  // which one overflows comes down to a sub-pixel rounding difference — observed in
+  // Firefox, where the closing piece clipped a sliver on its own at one width in the
+  // sweep. A character off-centre is invisible; a character disappearing is not.
+  const half = Math.floor(body.length / 2) + 1;
 
   return {
     head: address.slice(0, anchor),

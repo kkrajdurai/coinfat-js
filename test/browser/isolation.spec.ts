@@ -292,12 +292,23 @@ test.describe("the deposit address", () => {
         active_payment: {address: string};
       };
       invoice.active_payment.address = address;
-      await page.route(`**/checkout/${ULID}`, (route) =>
-        route.fulfill({
-          contentType: "application/json",
-          body: JSON.stringify(invoice)
-        })
-      );
+      // Every route that returns an invoice, not just `show`: the rate lock elapses
+      // mid-sweep and requotes, and the shared stub answers that with the FIXTURE's
+      // address — so the odd-length case silently reverted to the even-length one
+      // partway through and the offences after it were reported against the wrong
+      // string.
+      for (const path of [
+        `**/checkout/${ULID}`,
+        `**/checkout/${ULID}/select`,
+        `**/checkout/${ULID}/requote`
+      ]) {
+        await page.route(path, (route) =>
+          route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify(invoice)
+          })
+        );
+      }
       await page.reload();
       await page.waitForFunction(() => "Coinfat" in window);
 
@@ -336,10 +347,12 @@ test.describe("the deposit address", () => {
         });
       });
 
-      // Every half must be able to say it is hiding something: the two differ by a
-      // character on an odd address, so there are widths where only one overflows, and
-      // a half that merely clips drops a character with nothing on screen to show it.
-      expect(contract.map((h) => h.ellipsis)).toEqual(["ellipsis", "ellipsis"]);
+      // Exactly ONE ellipsis, on the opening half. Two of them do not make a middle
+      // ellipsis: both boxes also drop the glyph they can only paint half of, so the
+      // pair renders "…  …" around a hole that reads as missing characters. The
+      // closing half clips instead, and is safe to clip because it is never the longer
+      // of the two (see the addressParts unit test).
+      expect(contract.map((h) => h.ellipsis)).toEqual(["ellipsis", "clip"]);
       // And the closing half must run rtl, or its overflow falls at the far end and
       // the emphasised tail — the part a payer checks — is what gets hidden.
       expect(contract.map((h) => h.direction)).toEqual(["ltr", "rtl"]);
@@ -365,11 +378,15 @@ test.describe("the deposit address", () => {
 
           const hidden = (el: HTMLElement) =>
             el.scrollWidth > el.clientWidth + 0.5;
-          const marked = (el: HTMLElement) =>
-            getComputedStyle(el).textOverflow === "ellipsis";
-
-          // Painted text extents, not box extents: two boxes pinned at half the field
-          // always touch, so box geometry cannot see the hole between the two runs.
+          // Text extents rather than box extents: two boxes pinned at half the field
+          // always touch, so box geometry cannot see a hole between the two runs.
+          //
+          // Only meaningful while nothing is clipped. A Range reports the geometry the
+          // text was LAID OUT with, before `overflow: hidden` takes anything away, so
+          // across a truncated half it measures glyphs that are not on screen — it
+          // read a NEGATIVE gap over the two-ellipsis hole it was written to catch.
+          // The overflowing regime is checked by box abutment plus the one-ellipsis
+          // contract instead.
           const edge = (el: HTMLElement, side: "left" | "right") => {
             const range = document.createRange();
             range.selectNodeContents(el);
@@ -388,6 +405,7 @@ test.describe("the deposit address", () => {
             edge(halves[1], "left")
           ];
           const measurable = right !== null && left !== null;
+          const boxes = halves.map((el) => el.getBoundingClientRect());
 
           return {
             // Proof the resize landed. Passing no argument to evaluate() left this
@@ -396,7 +414,17 @@ test.describe("the deposit address", () => {
             width: root.querySelector("span.font-mono")!.clientWidth,
             measured: measurable,
             fits: !anyHidden,
-            silent: anyHidden && !halves.some((el) => hidden(el) && marked(el)),
+            // The whole address, whatever is painted of it — the copy button and a
+            // screen reader read this, and it also catches the panel re-rendering from
+            // another fixture mid-sweep.
+            text: root.querySelector("span.font-mono")!.textContent,
+            // The closing half clips, so it may only ever hide something while the
+            // opening half — which carries the sole ellipsis — is hiding something too.
+            // Measured rather than argued from character counts, since it is really a
+            // claim about glyph widths in whatever font resolved.
+            soloTail: hidden(halves[1]) && !hidden(halves[0]),
+            // The two boxes must stay flush whatever either is doing.
+            split: Math.round(boxes[1].left - boxes[0].right),
             gap: anyHidden || !measurable ? 0 : Math.round(left - right)
           };
         }, width);
@@ -404,11 +432,17 @@ test.describe("the deposit address", () => {
         widths.add(probe.width);
         everFits ||= probe.fits;
 
-        if (!probe.measured && !probe.silent) {
+        if (!probe.measured) {
           offences.push(`${width}px: could not measure`);
         }
-        if (probe.silent) {
-          offences.push(`${width}px: character hidden with no ellipsis`);
+        if (probe.text !== address) {
+          offences.push(`${width}px: rendered ${probe.text}`);
+        }
+        if (probe.soloTail) {
+          offences.push(`${width}px: closing half clipped on its own`);
+        }
+        if (probe.split > 1) {
+          offences.push(`${width}px: ${probe.split}px between the halves`);
         }
         if (probe.gap > 2) {
           offences.push(`${width}px: ${probe.gap}px hole mid-address`);

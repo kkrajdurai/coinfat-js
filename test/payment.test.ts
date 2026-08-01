@@ -186,9 +186,13 @@ describe("addressParts", () => {
     expect(tail).toBe("rstl6hw3");
     // Nothing is dropped — the middle is still there for CSS to shorten, not us.
     expect(head + lead + trail + tail).toBe(address);
-    // Halved to within one character, so the ellipsis lands mid-field rather than
+    // Halved to within two characters, so the ellipsis lands mid-field rather than
     // hard against the closing characters.
-    expect(Math.abs(lead.length - trail.length)).toBeLessThanOrEqual(1);
+    expect(Math.abs(lead.length - trail.length)).toBeLessThanOrEqual(2);
+    // And the opening piece is always the longer one — it is the half that carries the
+    // ellipsis, and the half beside it clips, so it must be the one to run out of room
+    // first or characters vanish unannounced.
+    expect(lead.length).toBeGreaterThan(trail.length);
   });
 
   it("scales the anchor with the address, within a narrow range", () => {
