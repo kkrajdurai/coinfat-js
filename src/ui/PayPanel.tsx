@@ -371,56 +371,25 @@ function ListeningIndicator({detected}: {detected: boolean}) {
 }
 
 /**
- * The deposit address, ellipsed through the middle rather than the end.
+ * The deposit address, wrapped rather than shortened.
  *
- * There is no CSS for a middle ellipsis, but there is no need for one: the head is
- * allowed to shrink and truncate while the tail is not, so the ellipsis lands between
- * them and both ends stay on screen. Doing it this way rather than cutting the string
- * by character count means it responds to the width the card actually has — which
- * changes with the layout, the viewport, and the payer's font size — instead of a
- * guess made in JavaScript.
+ * It wraps mid-string — `break-all`, since a hex or base32 address offers CSS no break
+ * opportunity of its own — and every character stays on screen at every width. The
+ * alternative, an ellipsis through the middle, cost three rounds of engine-specific
+ * defects (two ellipses meeting around a hole, a glyph sliced down the middle, a whole
+ * advance of blank where Chromium's ellipsis outmeasured the slot it was given) to hide
+ * characters the payer might want. Height is cheaper than doubt.
  *
- * The full address stays in the DOM, so it is what a screen reader reads and what the
- * copy button puts on the clipboard. Only the pixels are shortened.
+ * The ends stay weighted: those are what a payer compares against their wallet.
  */
 function DepositAddress({address}: {address: string}) {
-  const {head, lead, trail, tail} = addressParts(address);
+  const {head, body, tail} = addressParts(address);
 
   return (
-    <span class="flex min-w-0 flex-1 font-mono text-xs">
-      <span
-        // `max-w-1/2` rather than a half BASIS: a basis fixes the box at half the
-        // field whatever it holds, so an address that fits paints its two halves at
-        // opposite ends with a hole between them — and a hole is indistinguishable
-        // from hidden characters. Capped instead, each half is content-sized until
-        // the pair actually runs out of room.
-        class="max-w-1/2 truncate">
-        <span class="font-semibold text-foreground">{head}</span>
-        {lead}
-      </span>
-      <span
-        // `direction: rtl` moves this half's overflow to its start, which CSS
-        // otherwise cannot do. The characters keep their order: an address is
-        // alphanumeric throughout, and letters and digits are strong left-to-right,
-        // so only the clipped end moves.
-        //
-        // This half CLIPS where the other ellipses, because two ellipses meeting in
-        // the middle is not a middle ellipsis — each box also drops the glyph it can
-        // only paint half of, so the pair renders "…  …" with a hole between them that
-        // reads as missing characters rather than as one truncation.
-        //
-        // Nothing is dropped silently by clipping here: `addressParts` splits one
-        // character past the middle, so this half is always the strictly shorter of the
-        // two — by one character on an odd body, two on an even one — and cannot run out
-        // of room before the half beside it, the one carrying the ellipsis.
-        //
-        // `cf-addr-tail` caps it at half the field, rounded down to whole characters so
-        // the clip lands between glyphs rather than through one. It carries its own 50%
-        // fallback, which is why it is a class and not a utility — see theme.css.
-        class="cf-addr-tail overflow-hidden text-clip whitespace-nowrap [direction:rtl]">
-        {trail}
-        <span class="font-semibold text-foreground">{tail}</span>
-      </span>
+    <span class="min-w-0 flex-1 font-mono text-xs break-all">
+      <span class="font-semibold text-foreground">{head}</span>
+      {body}
+      <span class="font-semibold text-foreground">{tail}</span>
     </span>
   );
 }

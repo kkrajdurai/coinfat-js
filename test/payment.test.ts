@@ -177,22 +177,15 @@ describe("countdown", () => {
 });
 
 describe("addressParts", () => {
-  it("anchors both ends and leaves the middle to be ellipsed", () => {
+  it("anchors both ends and keeps the middle intact", () => {
     const address =
       "tb1q7q8ru09f7awg7v2mgmhw6zvnhtnsqpm28wks48r9cmmrn6ax6trstl6hw3";
-    const {head, lead, trail, tail} = addressParts(address);
+    const {head, body, tail} = addressParts(address);
 
     expect(head).toBe("tb1q7q8r");
     expect(tail).toBe("rstl6hw3");
-    // Nothing is dropped — the middle is still there for CSS to shorten, not us.
-    expect(head + lead + trail + tail).toBe(address);
-    // Halved to within two characters, so the ellipsis lands mid-field rather than
-    // hard against the closing characters.
-    expect(Math.abs(lead.length - trail.length)).toBeLessThanOrEqual(2);
-    // And the opening piece is always the longer one — it is the half that carries the
-    // ellipsis, and the half beside it clips, so it must be the one to run out of room
-    // first or characters vanish unannounced.
-    expect(lead.length).toBeGreaterThan(trail.length);
+    // Every character survives the split — this decides emphasis, not what is shown.
+    expect(head + body + tail).toBe(address);
   });
 
   it("scales the anchor with the address, within a narrow range", () => {
@@ -205,10 +198,10 @@ describe("addressParts", () => {
   });
 
   it("leaves a short address whole rather than mostly bold", () => {
-    const {head, lead, trail, tail} = addressParts("abcdefghij");
+    const {head, body, tail} = addressParts("abcdefghij");
 
     expect(head).toBe("abcdefghij");
-    expect(lead + trail + tail).toBe("");
+    expect(body + tail).toBe("");
   });
 });
 
