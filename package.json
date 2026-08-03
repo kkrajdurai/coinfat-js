@@ -1,6 +1,6 @@
 {
   "name": "@coinfat/checkout",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Embedded crypto checkout SDK for Coinfat.",
   "type": "module",
   "license": "MIT",
