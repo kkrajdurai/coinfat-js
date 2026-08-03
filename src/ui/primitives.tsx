@@ -116,6 +116,28 @@ export function AlertIcon() {
   );
 }
 
+export function HelpIcon() {
+  return (
+    <Icon>
+      <circle cx="12" cy="12" r="9" {...STROKE} />
+      <path
+        d="M9.6 9.3a2.5 2.5 0 1 1 2.9 2.6c-.6.1-.9.6-.9 1.2v.4"
+        {...ROUNDED}
+      />
+      <path d="M12 16.6v.01" {...CAPPED} />
+    </Icon>
+  );
+}
+
+/** The accordion marker: a plus that loses its stem when the answer is showing. */
+export function ExpandIcon({open}: {open: boolean}) {
+  return (
+    <Icon class="size-4 shrink-0">
+      <path d={open ? "M5 12h14" : "M5 12h14M12 5v14"} {...CAPPED} />
+    </Icon>
+  );
+}
+
 export function CircleXIcon() {
   return (
     <Icon class="size-7">

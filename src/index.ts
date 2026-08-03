@@ -44,7 +44,9 @@ export type {ButtonParams} from "./widget/button.js";
 /** The full string table, plus the English base to copy when building a locale. */
 export type {
   CheckoutStrings,
-  CheckoutStringsOverride
+  CheckoutStringsOverride,
+  FaqContext,
+  FaqEntry
 } from "./ui/strings/index.js";
 export {en as englishStrings} from "./ui/strings/index.js";
 export type {

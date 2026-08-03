@@ -413,3 +413,147 @@ test.describe("the deposit address", () => {
     });
   }
 });
+
+// The FAQ swaps itself into the same card, so it inherits the card's two layout
+// obligations — stay inside the container, stay clear of the badge — under content the
+// pay panel never produces: eight stacked rows and a paragraph that reflows with width.
+test.describe("the FAQ", () => {
+  const openFaq = async (page: Page, host: string) => {
+    const shadow = page.locator(host);
+    await shadow.locator('[aria-label="Common questions"]').click();
+    await shadow.locator("h3 button").first().waitFor();
+    return shadow;
+  };
+
+  test.describe("in a narrow inline slot", () => {
+    test("fits without a scrollbar and without widening the slot", async ({
+      page
+    }) => {
+      // 300px: narrower than any real column, and the width the 34rem cap was
+      // measured against.
+      await page.evaluate(
+        ({api, ulid}) => {
+          const slot = document.querySelector<HTMLElement>("#btn-mount")!;
+          slot.style.width = "300px";
+          window.Coinfat({apiBase: api}).checkout({
+            invoice: ulid,
+            display: "inline",
+            mount: "#btn-mount",
+            layout: "narrow"
+          });
+        },
+        {api: API, ulid: ULID}
+      );
+
+      const shadow = await openFaq(page, "#btn-mount [data-coinfat]");
+      // Every question the fixture offers, not a hardcoded eight: a count that drifts
+      // from the table silently stops sweeping whatever was added.
+      const count = await shadow.locator("h3 button").count();
+      expect(count).toBeGreaterThan(4);
+
+      for (let index = 0; index < count; index++) {
+        // One answer at a time is the design, so each is measured on its own.
+        const question = shadow.locator("h3 button").nth(index);
+        await question.click();
+
+        const probe = await page.evaluate(() => {
+          const sr = document.querySelector("[data-coinfat]")!.shadowRoot!;
+          const list = sr.querySelector<HTMLElement>(".overscroll-contain")!;
+          // Scoped to the questions: the header trigger carries `aria-expanded` too,
+          // and it is the one that is true whenever the FAQ is showing at all.
+          const open = sr.querySelector<HTMLElement>(
+            'h3 button[aria-expanded="true"]'
+          )!;
+          const answer = sr.querySelector<HTMLElement>(
+            `#${open.getAttribute("aria-controls")}`
+          )!;
+          const bounds = list.getBoundingClientRect();
+
+          // Measured against the LIST, not the card: the card is a plain block, so its
+          // width tracks the slot's whatever it holds — an overflow check on it reads
+          // 0 through content that spills a mile, and can never fail.
+          const past = (element: HTMLElement) =>
+            Math.round(element.getBoundingClientRect().right - bounds.right);
+
+          return {
+            // The stock table must never engage its own scroller: a clipped question
+            // is sliced through its letterforms, which reads as broken, not as "more".
+            clipped: list.scrollHeight > list.clientHeight + 1,
+            spill: Math.max(
+              list.scrollWidth - list.clientWidth,
+              past(open),
+              past(answer)
+            ),
+            // The answer is below its question, not beside it.
+            answerWraps:
+              open.getBoundingClientRect().bottom <=
+              answer.getBoundingClientRect().top
+          };
+        });
+
+        expect(probe, `answer ${index}`).toMatchObject({
+          clipped: false,
+          answerWraps: true
+        });
+        expect(probe.spill, `answer ${index}`).toBeLessThanOrEqual(0);
+
+        await question.click();
+      }
+    });
+  });
+
+  test.describe("in a modal on a short viewport", () => {
+    test.use({viewport: {width: 390, height: 420}});
+
+    test("never lets the badge paint over the questions", async ({page}) => {
+      await page.evaluate(
+        ({api, ulid}) =>
+          window
+            .Coinfat({apiBase: api})
+            .checkout({invoice: ulid, display: "modal", layout: "narrow"})
+            .open(),
+        {api: API, ulid: ULID}
+      );
+
+      await page.getByRole("dialog").waitFor();
+      const shadow = await openFaq(page, "[data-coinfat]");
+      // The tallest answer, so the card is at its worst against a 420px viewport.
+      await shadow.locator("h3 button").nth(1).click();
+
+      const reached: number[] = [];
+
+      for (const scrollTop of [0, 9999]) {
+        const probe = await page.evaluate((top) => {
+          const sr = document.querySelector("[data-coinfat]")!.shadowRoot!;
+          // The modal's own scroll viewport: first in document order, since the FAQ
+          // list — also `overflow-y-auto` — is nested inside the card within it.
+          const scroller = sr.querySelector(".overflow-y-auto")!;
+          scroller.scrollTop = top;
+
+          const badge = sr.querySelector<HTMLElement>(
+            'div[aria-hidden="true"]'
+          )!;
+          const b = badge.getBoundingClientRect();
+
+          return {
+            // Whatever sits under the badge's middle: the mask, never a question.
+            hit: sr.elementFromPoint(
+              (b.left + b.right) / 2,
+              (b.top + b.bottom) / 2
+            )?.className,
+            scrolled: scroller.scrollTop
+          };
+        }, scrollTop);
+
+        reached.push(probe.scrolled);
+        expect(probe.hit).toContain("fixed inset-0");
+      }
+
+      // The two probes have to be two different situations. A card that fits the
+      // viewport cannot scroll, and the loop would then assert the same frame twice —
+      // passing without ever putting the card's bottom edge next to the badge.
+      expect(reached[0]).toBe(0);
+      expect(reached[1]).toBeGreaterThan(0);
+    });
+  });
+});

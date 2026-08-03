@@ -1,4 +1,5 @@
 import type {ComponentChild} from "preact";
+import {useRef, useState} from "preact/hooks";
 import type {CheckoutApiError} from "../core/api.js";
 import type {CheckoutController, CheckoutState} from "../core/checkout.js";
 import type {WidgetLayout} from "../core/options.js";
@@ -9,7 +10,8 @@ import {
   type Wallet
 } from "../core/types.js";
 import {CoinSelect, useCoinSwitch} from "./CoinSelect.js";
-import {CloseIcon} from "./primitives.js";
+import {Faq, faqContext, faqEntries} from "./Faq.js";
+import {CloseIcon, HelpIcon} from "./primitives.js";
 import {formatMoney} from "./format.js";
 import {PayPanel} from "./PayPanel.js";
 import {Terminal, terminalMessage} from "./Terminal.js";
@@ -95,6 +97,10 @@ function InvoiceCard({
 }) {
   const strings = useStrings();
   const requestClose = useCloseRequest();
+  const [faqOpen, setFaqOpen] = useState(false);
+  // The trigger stays mounted while the FAQ is up — it is the toggle — so closing from
+  // inside the FAQ can hand focus straight back to it, with no effect to sequence.
+  const helpRef = useRef<HTMLButtonElement>(null);
   const {store, active_payment: payment} = invoice;
   // Terminal invoices keep their `active_payment`. Without this gate a settled invoice
   // still shows a live deposit address and QR, and a payer reloading the link sends a
@@ -104,8 +110,32 @@ function InvoiceCard({
   const {picking, canSwitch, selectedNetworkId, startSwitch, cancelSwitch} =
     useCoinSwitch(payment, wallets);
 
+  // Offered on terminal invoices too: "my payment wasn't credited" and "I never got
+  // what I paid for" are asked after the checkout is over, not during it.
+  const context = faqContext(invoice);
+  const entries = faqEntries(strings, context);
+
+  const closeFaq = () => {
+    setFaqOpen(false);
+    helpRef.current?.focus();
+  };
+
+  // Escape backs out of the FAQ rather than out of the checkout. Bound at the CARD, not
+  // inside the FAQ: the header — trigger and close button both — is the FAQ's sibling,
+  // so a key pressed there would bubble straight past it to the modal's handler and
+  // raise the close prompt instead. Stopped only while the FAQ is showing, and only for
+  // Escape: that same handler is the modal's Tab focus trap.
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (faqOpen && event.key === "Escape") {
+      event.stopPropagation();
+      closeFaq();
+    }
+  };
+
   return (
-    <div class={`${CARD} text-card-foreground shadow-xl shadow-primary/5`}>
+    <div
+      class={`${CARD} text-card-foreground shadow-xl shadow-primary/5`}
+      onKeyDown={onKeyDown}>
       <header class="flex items-center justify-between gap-3">
         <div class="flex items-center gap-2 min-w-0">
           {store.logo?.url ? (
@@ -115,8 +145,31 @@ function InvoiceCard({
             {store.name}
           </span>
         </div>
-        <div class="flex shrink-0 items-center gap-1.5">
+        <div
+          // NOT `shrink-0`: with a status word, a help trigger and a close button on
+          // it, this cluster's natural width can exceed the whole card in a slot narrow
+          // enough, and an unshrinkable cluster pushes the card out of its container
+          // rather than giving way. The badge absorbs it; the two icons never shrink.
+          //
+          // Shrinking at the default factor, NOT a fractional one: weighting the squeeze
+          // onto the store name reads better at 300px, but at the widths the deposit-
+          // address sweep covers the name cannot give up enough on its own, and the card
+          // overflowed its slot by up to 12px again.
+          class="flex min-w-0 items-center gap-1.5">
           <StatusBadge status={invoice.status} />
+          {entries.length > 0 ? (
+            <button
+              ref={helpRef}
+              type="button"
+              aria-label={strings.faqOpen}
+              aria-expanded={faqOpen}
+              onClick={() => setFaqOpen((open) => !open)}
+              class={`inline-flex shrink-0 rounded-md p-1 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                faqOpen ? "bg-muted text-foreground" : "text-muted-foreground"
+              }`}>
+              <HelpIcon />
+            </button>
+          ) : null}
           {onRequestClose ? (
             <button
               type="button"
@@ -126,7 +179,7 @@ function InvoiceCard({
               // this is the guarded close, so the warning cannot be walked past by
               // using the card's own exit instead of the backdrop.
               onClick={requestClose ?? onRequestClose}
-              class="-me-1 inline-flex rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              class="-me-1 inline-flex shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <CloseIcon />
             </button>
           ) : null}
@@ -152,45 +205,61 @@ function InvoiceCard({
         {settled ? terminalMessage(invoice.status, strings) : ""}
       </p>
 
-      {settled ? (
-        <Terminal invoice={invoice} />
-      ) : (
-        <>
-          <div
-            // Hidden once the pay panel splits in two, where it renders its own copy
-            // at the top of the details column — otherwise it sits full-width above
-            // the split with an empty half-card beside it. Duplicated and
-            // container-queried rather than moved, so the stacked order stays
-            // amount-first no matter which column the DOM puts first.
-            class={
-              layout === "wide" && payment && !picking
-                ? "mt-4 @md:hidden"
-                : "mt-4"
-            }>
-            <AmountDue amount={invoice.amount} />
-          </div>
+      <div
+        // Hidden, not unmounted, for the reason the modal hides the card behind its
+        // close prompt: a running rate lock and a half-made coin switch survive the
+        // detour. The live regions above stay outside it, so a poll landing while the
+        // FAQ is open is still announced.
+        class={faqOpen ? "hidden" : undefined}>
+        {settled ? (
+          <Terminal invoice={invoice} />
+        ) : (
+          <>
+            <div
+              // Hidden once the pay panel splits in two, where it renders its own copy
+              // at the top of the details column — otherwise it sits full-width above
+              // the split with an empty half-card beside it. Duplicated and
+              // container-queried rather than moved, so the stacked order stays
+              // amount-first no matter which column the DOM puts first.
+              class={
+                layout === "wide" && payment && !picking
+                  ? "mt-4 @md:hidden"
+                  : "mt-4"
+              }>
+              <AmountDue amount={invoice.amount} />
+            </div>
 
-          {picking ? (
-            <CoinSelect
-              controller={controller}
-              wallets={wallets}
-              walletsError={walletsError}
-              mutating={mutating}
-              selectedNetworkId={selectedNetworkId}
-              onCancel={payment ? cancelSwitch : undefined}
-            />
-          ) : payment ? (
-            <PayPanel
-              payment={payment}
-              amount={invoice.amount}
-              controller={controller}
-              mutating={mutating}
-              layout={layout}
-              onChangeCoin={canSwitch ? startSwitch : undefined}
-            />
-          ) : null}
-        </>
-      )}
+            {picking ? (
+              <CoinSelect
+                controller={controller}
+                wallets={wallets}
+                walletsError={walletsError}
+                mutating={mutating}
+                selectedNetworkId={selectedNetworkId}
+                onCancel={payment ? cancelSwitch : undefined}
+              />
+            ) : payment ? (
+              <PayPanel
+                payment={payment}
+                amount={invoice.amount}
+                controller={controller}
+                mutating={mutating}
+                layout={layout}
+                onChangeCoin={canSwitch ? startSwitch : undefined}
+              />
+            ) : null}
+          </>
+        )}
+      </div>
+
+      {faqOpen ? (
+        <Faq
+          entries={entries}
+          context={context}
+          invoice={invoice}
+          onClose={closeFaq}
+        />
+      ) : null}
     </div>
   );
 }
@@ -242,9 +311,14 @@ function StatusBadge({status}: {status: StoreInvoiceStatus}) {
 
   return (
     <span
-      class={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${style.chip}`}>
-      <span class={`size-1.5 rounded-full ${style.dot}`} />
-      {strings.status[status]}
+      class={`inline-flex min-w-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${style.chip}`}>
+      <span class={`size-1.5 shrink-0 rounded-full ${style.dot}`} />
+      <span
+        // Truncates rather than wrapping: a second line inside a rounded pill reads
+        // as a bug.
+        class="truncate">
+        {strings.status[status]}
+      </span>
     </span>
   );
 }

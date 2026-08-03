@@ -70,5 +70,66 @@ export const en: CheckoutStrings = {
   noNetworks: "No networks are available for this coin.",
   optionsError: "Couldn't load the payment options.",
 
+  faq: [
+    {
+      id: "how-to-pay",
+      q: () => "How do I pay?",
+      a: () =>
+        "Pick a coin and a network, then send the exact amount shown to the deposit address from your own wallet or exchange account. This page updates by itself once your transfer is spotted on the network."
+    },
+    {
+      id: "where-to-get-crypto",
+      q: () => "Where do I get crypto to pay with?",
+      a: () =>
+        "From a crypto exchange or a wallet app that lets you buy, then withdraw to the address on this page. Exchanges charge their own withdrawal fee, so check what will actually arrive — the fee comes out of the amount you send, not on top of it."
+    },
+    {
+      id: "wrong-coin",
+      q: () => "What if I use the wrong coin or network?",
+      a: ({symbol, network}) =>
+        `This address accepts ${symbol} on ${network} and nothing else. A different coin, or ${symbol} on a different chain, is sent to an address that cannot receive it and is usually unrecoverable — check both in your wallet before you confirm.`
+    },
+    {
+      id: "wrong-amount",
+      q: () => "What if I send the wrong amount?",
+      a: ({symbol, store}) =>
+        `Send too little and this page shows what is still owed — top it up with a second transfer to the same address. Send too much and the payment completes; ${store} will reconcile the surplus ${symbol}.`
+    },
+    {
+      id: "timer",
+      q: () => "The timer ran out. Do I have to start again?",
+      a: () =>
+        "No, but send promptly. The countdown holds the quoted amount, not your payment: if it lapses before your transfer is spotted, this page quotes a fresh amount at the current rate, and a transfer already on its way can land short of the new one. Once it is spotted the amount stops moving and simply keeps confirming."
+    },
+    {
+      id: "how-long",
+      q: () => "How long does it take to confirm?",
+      a: ({network, confirmations}) =>
+        `${network} needs ${confirmations} ${confirmations === 1 ? "confirmation" : "confirmations"} before this payment counts as complete — often a few minutes, though slower chains and busy ones take longer. You can leave this page open and watch it.`
+    },
+    {
+      id: "paid-next",
+      q: () => "I've paid. What happens now?",
+      a: ({store}) =>
+        `Nothing more to do. This page marks the payment complete once the network confirms it, and ${store} is notified too.`
+    },
+    {
+      id: "expired-next",
+      q: () => "This payment link is no longer active. What now?",
+      a: ({store}) =>
+        `Start again from ${store} — a new checkout quotes a fresh amount and a fresh address. If you already sent a transfer to the address on this page, do not send more; contact ${store} with the amount and the date.`
+    },
+    {
+      id: "not-received",
+      q: () => "What if I don't get what I paid for?",
+      a: ({store}) =>
+        `Your payment goes to ${store}, and the order, the delivery and any refund are theirs to settle. Contact them with the amount you sent and the date you sent it.`
+    }
+  ],
+  faqTitle: "Common questions",
+  faqOpen: "Common questions",
+  faqBack: "Back to payment",
+  faqContact: (store) => `Contact ${store}`,
+
   payWithCrypto: "Pay with crypto"
 };

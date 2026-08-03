@@ -50,6 +50,13 @@ Decided deliberately. Do not revisit without a reason.
 - **Modal attribution badge:** "Powered by Coinfat", pinned to the mask outside the
   dialog. Its gutter is cut from the scroll viewport, not from the content — see
   `src/ui/Modal.tsx`, and do not "simplify" it back to padding.
+- **Payer FAQ:** a `?` in the card header swaps the card's body over to a disclosure
+  list, on every state including terminal ones. Deliberately NOT a second dialog — the
+  reasons are `CloseConfirm`'s, plus inline having no overlay to lay one over. The
+  questions live in the string table (so they translate, and `strings.faq: []` turns the
+  whole thing off); which of them apply lives in `Faq.tsx`, keyed by entry id, so a
+  locale never carries logic. No new endpoint: answers interpolate the invoice already
+  loaded. Search is deliberately absent at eight entries.
 - **Out of v1:** realtime, framework wrappers (React/Vue), a deep appearance API (only
   the accent + light/dark seam exists).
 
@@ -84,6 +91,7 @@ src/
     PayPanel.tsx   the pay experience: QR, copy fields, rate lock, amounts
     CoinSelect.tsx coin + network picker -> controller.select (+ switch flow)
     Terminal.tsx   completed / expired / canceled terminal states
+    Faq.tsx        payer FAQ: a view swapped into the card, + its relevance rules
     primitives.tsx Button, LinkButton, Spinner, CopyField, RateLock, icons, brand mark
     payment.ts     pay-panel arithmetic + notice logic (no Preact — unit-tested)
     Modal.tsx      modal chrome (backdrop + centered card + attribution badge)
@@ -137,7 +145,9 @@ Callbacks (all optional): `onReady`, `onCoinSelected`, `onPaymentDetected`,
 `onCompleted`, `onExpired`, `onCanceled`, `onError`. Theme seam:
 `theme: {accent?: "#hex", mode?: "light" | "dark" | "auto"}`. Translation seam:
 `locale?: "fr"` and `strings?: {sendExactly?: "…"}`. `locale` also drives `Intl`
-**fiat** formatting; crypto amounts render verbatim and are never grouped.
+**fiat** formatting; crypto amounts render verbatim and are never grouped. The FAQ
+rides the same seam: `strings: {faq: [{id, q, a}]}` replaces the list wholesale, and
+`faq: []` removes it, trigger and all.
 
 Callbacks are owned by the **controller**, not the view, so each transition fires once
 per invoice — reopening the modal must not replay `onReady`/`onCompleted` (and with it
@@ -281,7 +291,7 @@ stylesheets, `matchMedia`, `AbortController`) is equally in scope: check MDN.
 Shipped: the framework-neutral core (config, api incl. the wallets endpoint,
 poll/state engine, the `CheckoutApiError` contract), shadow-DOM mount with Tailwind
 isolation, inline + modal + drop-in-button presenters, the full checkout UI
-(`PayPanel`, `CoinSelect` with the post-detection coin lock, `Terminal`), the i18n
+(`PayPanel`, `CoinSelect` with the post-detection coin lock, `Terminal`, `Faq`), the i18n
 seam (`en` only), theming (accent + light/dark), modal a11y (focus trap, scroll lock,
 Escape) and its attribution badge, the three build formats (ESM, UMD, IIFE) with
 examples, and a Vitest + jsdom suite.
@@ -289,6 +299,7 @@ examples, and a Vitest + jsdom suite.
 Published under MIT. `src/core/config.ts` maps production → `https://api.coinfat.com`
 and development → `https://test-api.coinfat.com`; the packaged script targets both.
 
-Style isolation, the focus trap and the badge's clearance — the three things jsdom
-cannot judge — are covered by a hermetic Playwright suite (`npm run test:browser`,
-chromium/firefox/webkit) against `dist/coinfat.iife.js`.
+Style isolation, the focus trap, the badge's clearance and the two things that turn on
+real text metrics — the deposit address wrapping, and the FAQ fitting a narrow slot
+without clipping a question — are covered by a hermetic Playwright suite
+(`npm run test:browser`, chromium/firefox/webkit) against `dist/coinfat.iife.js`.

@@ -1,6 +1,44 @@
 import type {StoreInvoiceStatus} from "../../core/types.js";
 
 /**
+ * What an FAQ answer is allowed to name. Every field is read off the invoice the
+ * checkout has already loaded — the FAQ costs no request of its own.
+ */
+export interface FaqContext {
+  /**
+   * Where the invoice stands. Load-bearing, not decorative: a settled invoice keeps its
+   * `active_payment`, so without this every "how to pay" answer would still read as
+   * live on an expired one — and the rate-lock answer would promise a requote that a
+   * terminal invoice will never perform.
+   */
+  status: StoreInvoiceStatus;
+  /** The chosen coin, e.g. "USDT". Empty before a coin is selected. */
+  symbol: string;
+  /** The chain, e.g. "Tron" — `chainName`, not the pair. Empty before selection. */
+  network: string;
+  /** Confirmations this network needs before the payment completes. 0 if unknown. */
+  confirmations: number;
+  /** The merchant's display name. */
+  store: string;
+}
+
+/**
+ * One question and its answer. Both are functions of the context for the same reason
+ * the rest of the table's interpolated strings are: a locale owns its word order and
+ * its plurals.
+ */
+export interface FaqEntry {
+  /**
+   * Stable across locales. `Faq.tsx` keys its relevance rules on this id, so a
+   * translator never has to re-encode which questions apply when; an id with no rule
+   * is always shown.
+   */
+  id: string;
+  q: (context: FaqContext) => string;
+  a: (context: FaqContext) => string;
+}
+
+/**
  * Every payer-facing string the SDK itself authors. Interpolated ones are FUNCTIONS,
  * not placeholder templates, so a locale owns its grammar — word order, and plurals via
  * `Intl.PluralRules` where a language needs it. The SDK never concatenates on a
@@ -96,6 +134,20 @@ export interface CheckoutStrings {
   searchCoins: string;
   noNetworks: string;
   optionsError: string;
+
+  // FAQ
+  /**
+   * The questions, in display order. An empty list removes the FAQ entirely, trigger
+   * and all — which is also how a merchant turns it off.
+   */
+  faq: FaqEntry[];
+  faqTitle: string;
+  /** Accessible name for the header trigger that swaps the card over to the FAQ. */
+  faqOpen: string;
+  /** Returns to the payment view. */
+  faqBack: string;
+  /** Link out to the store, shown only when the invoice carries somewhere to go. */
+  faqContact: (store: string) => string;
 
   // Drop-in button
   payWithCrypto: string;

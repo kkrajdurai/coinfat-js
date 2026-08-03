@@ -14,7 +14,12 @@ import type {PaymentNotice} from "../payment.js";
 import {en} from "./en.js";
 import type {CheckoutStrings, CheckoutStringsOverride} from "./types.js";
 
-export type {CheckoutStrings, CheckoutStringsOverride} from "./types.js";
+export type {
+  CheckoutStrings,
+  CheckoutStringsOverride,
+  FaqContext,
+  FaqEntry
+} from "./types.js";
 export {en} from "./en.js";
 
 /** Every bundled locale, keyed by its lowercase BCP-47 tag. */
