@@ -57,6 +57,14 @@ Decided deliberately. Do not revisit without a reason.
   whole thing off); which of them apply lives in `Faq.tsx`, keyed by entry id, so a
   locale never carries logic. No new endpoint: answers interpolate the invoice already
   loaded. Search is deliberately absent at eight entries.
+- **Payer notification email:** an inline disclosure in `PayPanel`'s footer — the FAQ's
+  no-second-dialog call again, and there is deliberately **no `<form>` element**, since
+  whether one inside a shadow root associates with the merchant's own form is not
+  something MDN settles, and a stray submit navigating off their checkout costs more than
+  the Enter handler saves. Living in `PayPanel` is what confines it to the window the
+  backend accepts: the card swaps to `<Terminal>` on any terminal status, so no status
+  gate of its own is needed, and it still shows while a detected payment confirms.
+  `setPayerEmail` does **not** go through `CheckoutController.mutate()` — see below.
 - **Out of v1:** realtime, framework wrappers (React/Vue), a deep appearance API (only
   the accent + light/dark seam exists).
 
@@ -92,6 +100,7 @@ src/
     CoinSelect.tsx coin + network picker -> controller.select (+ switch flow)
     Terminal.tsx   completed / expired / canceled terminal states
     Faq.tsx        payer FAQ: a view swapped into the card, + its relevance rules
+    PayerEmail.tsx notification sign-up + where each kind of failure may appear
     primitives.tsx Button, LinkButton, Spinner, CopyField, RateLock, icons, brand mark
     payment.ts     pay-panel arithmetic + notice logic (no Preact — unit-tested)
     Modal.tsx      modal chrome (backdrop + centered card + attribution badge)
@@ -159,8 +168,25 @@ Narrow with `instanceof` to read them. `select()` and `requote()` never reject;
 failures land on `state.error`.
 
 `CheckoutState` is `{invoice, wallets, walletsError, isLoading, notFound, error,
-isTerminal, mutating}` — one `mutating` flag covers select and requote, since they
-supersede each other.
+isTerminal, mutating, savingEmail, emailError}` — one `mutating` flag covers select and
+requote, since they supersede each other.
+
+`setPayerEmail(email)` is deliberately **not** one of them and does not go through
+`mutate()`: that path aborts whatever is in flight and raises `mutating`, so an address
+submitted mid-switch would cancel the switch and spin the picker. It gets its own abort
+handle, its own `savingEmail`, and its own `emailError` — which stays off `error` (a
+card-wide banner, and the merchant's `onError`) because a typo belongs under the input.
+It also takes **only `payer_email`** off its 200 body rather than the whole `Checkout`
+the endpoint returns: that body was serialised before any concurrent select landed, so
+applying it entire can resurrect the payment the payer just switched away from.
+
+The converse race needs the mirror guard, and `applyInvoice` carries it: because the
+email call runs beside the poll instead of suspending it, a `show` serialised **before**
+a successful PUT can land after it still saying `payer_email: null`. The controller
+remembers the last mask and puts it back (`withPayerEmail`) — the field only ever goes
+null → mask → another mask, so refusing to let it regress to null is always right.
+Without it the confirmation flips back to the sign-up prompt for up to 8s, which reads
+as the address having been lost.
 
 ---
 
@@ -199,6 +225,20 @@ The public checkout surface this SDK is built against:
 - `POST /api/v1/checkout/{ulid}/select` — body `{wallet_network_id}` (the network `id`
   from the wallets endpoint).
 - `POST /api/v1/checkout/{ulid}/requote`.
+- `PUT  /api/v1/checkout/{ulid}/payer-email` — body `{email}`; where to mail the payer
+  once the invoice completes. Accepted **only while pending** (a detected-but-confirming
+  payment still counts); afterwards it 422s with a bare `message`. Returns the whole
+  `Checkout`, but trust it for `payer_email` alone. That field reads back **masked**
+  (`j***@example.com`) and is display-only — never re-submit it, or the mask is stored
+  verbatim as the new address. The address is never verified: no confirmation link, no
+  bounce handling, so surfacing the mask is the payer's only chance to catch a typo.
+
+  Its failures need routing, not just displaying: a `422` **with** `errors.email` is a
+  verdict on the address; a `422` **without** means the invoice stopped accepting them;
+  and a `429` is **neither** — a second limit caps the invoice at five address changes
+  for its lifetime, and once that is reached _every_ submission is rejected, including
+  one carrying the address already stored. Never render a `429` against the field. See
+  `emailFailure` in `src/ui/PayerEmail.tsx`.
 
 CORS is open + credential-less for these paths; rate-limited per invoice+IP (expect
 occasional `429` — back off). The types in `src/core/types.ts` mirror the backend's
@@ -291,7 +331,8 @@ stylesheets, `matchMedia`, `AbortController`) is equally in scope: check MDN.
 Shipped: the framework-neutral core (config, api incl. the wallets endpoint,
 poll/state engine, the `CheckoutApiError` contract), shadow-DOM mount with Tailwind
 isolation, inline + modal + drop-in-button presenters, the full checkout UI
-(`PayPanel`, `CoinSelect` with the post-detection coin lock, `Terminal`, `Faq`), the i18n
+(`PayPanel`, `CoinSelect` with the post-detection coin lock, `Terminal`, `Faq`,
+`PayerEmail`), the i18n
 seam (`en` only), theming (accent + light/dark), modal a11y (focus trap, scroll lock,
 Escape) and its attribution badge, the three build formats (ESM, UMD, IIFE) with
 examples, and a Vitest + jsdom suite.
@@ -301,5 +342,6 @@ and development → `https://test-api.coinfat.com`; the packaged script targets 
 
 Style isolation, the focus trap, the badge's clearance and the two things that turn on
 real text metrics — the deposit address wrapping, and the FAQ fitting a narrow slot
-without clipping a question — are covered by a hermetic Playwright suite
+without clipping a question — plus the email form fitting a 300px slot and staying
+inside the modal's tab cycle, are covered by a hermetic Playwright suite
 (`npm run test:browser`, chromium/firefox/webkit) against `dist/coinfat.iife.js`.

@@ -6,6 +6,7 @@
  */
 
 import {useEffect, useState} from "preact/hooks";
+import type {CheckoutApiError} from "../core/api.js";
 import type {CheckoutController} from "../core/checkout.js";
 import type {WidgetLayout} from "../core/options.js";
 import type {Checkout, StoreInvoicePayment} from "../core/types.js";
@@ -25,6 +26,7 @@ import {
   RefreshIcon,
   SwapIcon
 } from "./primitives.js";
+import {PayerEmail} from "./PayerEmail.js";
 import {noticeMessage} from "./strings/index.js";
 import {useStrings} from "./strings/context.js";
 
@@ -35,6 +37,10 @@ export interface PayPanelProps {
   controller: CheckoutController;
   /** A select/requote is in flight. */
   mutating: boolean;
+  /** `invoice.payer_email` — masked, or null. See PayerEmail. */
+  payerEmail: string | null;
+  savingEmail: boolean;
+  emailError: CheckoutApiError | null;
   /** 'wide' allows the QR/details two-column split; 'narrow' stays single-column. */
   layout: WidgetLayout;
   /** Reopen the coin picker. Omitted once a payment is detected (the coin locks). */
@@ -91,6 +97,9 @@ export function PayPanel({
   amount,
   controller,
   mutating,
+  payerEmail,
+  savingEmail,
+  emailError,
   layout,
   onChangeCoin
 }: PayPanelProps) {
@@ -276,8 +285,19 @@ export function PayPanel({
         </div>
       </div>
 
-      <div class="border-t border-border pt-3">
+      <div
+        // The closing strip: what the page is doing, then the offer to stop watching it.
+        // Full-width under the split rather than inside the details column — the form is
+        // not part of what to send, and column-bound in `wide` it would sit beside an
+        // empty half-card.
+        class="space-y-3 border-t border-border pt-3">
         <ListeningIndicator detected={detected} />
+        <PayerEmail
+          payerEmail={payerEmail}
+          saving={savingEmail}
+          error={emailError}
+          controller={controller}
+        />
       </div>
     </div>
   );

@@ -69,6 +69,17 @@ async function stubEnvironment(page: Page): Promise<void> {
   await page.route(`**/checkout/${ULID}/requote`, (route) =>
     json(route, fixtures.invoice)
   );
+  // Echoes the address back masked, exactly as the endpoint does.
+  await page.route(`**/checkout/${ULID}/payer-email`, async (route) => {
+    const sent = route.request().postDataJSON() as {email?: string};
+    const email = sent.email ?? "";
+    const [local, domain] = email.split("@");
+
+    return json(route, {
+      ...(fixtures.invoice as Record<string, unknown>),
+      payer_email: domain ? `${local[0]}***@${domain}` : null
+    });
+  });
   await page.route(`**/checkout/${ULID}`, (route) =>
     json(route, fixtures.invoice)
   );
@@ -555,5 +566,112 @@ test.describe("the FAQ", () => {
       expect(reached[0]).toBe(0);
       expect(reached[1]).toBeGreaterThan(0);
     });
+  });
+});
+
+/**
+ * The notification sign-up. Two things only a real engine can settle: whether a labelled
+ * field and a button fit a slot narrower than any real column, and whether the modal's
+ * focus trap — which walks the tab order it finds — reaches an input that did not exist
+ * when the trap was installed.
+ */
+test.describe("the payer email form", () => {
+  const openForm = async (page: Page, host: string) => {
+    const shadow = page.locator(host);
+    await shadow.getByRole("button", {name: /Email me when/}).click();
+    await shadow.locator("input[type=email]").waitFor();
+    return shadow;
+  };
+
+  test("fits a 300px inline slot without spilling out of the card", async ({
+    page
+  }) => {
+    await page.evaluate(
+      ({api, ulid}) => {
+        const slot = document.querySelector<HTMLElement>("#btn-mount")!;
+        slot.style.width = "300px";
+        window.Coinfat({apiBase: api}).checkout({
+          invoice: ulid,
+          display: "inline",
+          mount: "#btn-mount",
+          layout: "narrow"
+        });
+      },
+      {api: API, ulid: ULID}
+    );
+
+    await openForm(page, "#btn-mount [data-coinfat]");
+
+    const probe = await page.evaluate(() => {
+      const sr = document.querySelector("[data-coinfat]")!.shadowRoot!;
+      const field = sr.querySelector<HTMLInputElement>("input[type=email]")!;
+      // The form's own box, not the card: a plain block div's width tracks its
+      // containing block, so measuring overflow on the card can never fail.
+      const box = field.closest<HTMLElement>("div")!;
+      const bounds = box.getBoundingClientRect();
+
+      const past = (element: HTMLElement) =>
+        Math.round(element.getBoundingClientRect().right - bounds.right);
+
+      const submit = Array.from(sr.querySelectorAll("button")).find((node) =>
+        node.textContent?.includes("Notify me")
+      )!;
+
+      return {
+        spill: Math.max(past(field), past(submit)),
+        // Stacked, not side by side: at this width a row would crush both.
+        stacked:
+          field.getBoundingClientRect().bottom <=
+          submit.getBoundingClientRect().top,
+        // The whole card still inside the merchant's 300px slot.
+        slotOverflow: Math.round(
+          sr.host.getBoundingClientRect().width -
+            document.querySelector("#btn-mount")!.getBoundingClientRect().width
+        )
+      };
+    });
+
+    expect(probe.spill).toBeLessThanOrEqual(0);
+    expect(probe.stacked).toBe(true);
+    expect(probe.slotOverflow).toBeLessThanOrEqual(0);
+  });
+
+  test("is reachable through the modal's focus trap", async ({page}) => {
+    await page.evaluate(
+      ({api, ulid}) =>
+        window
+          .Coinfat({apiBase: api})
+          .checkout({invoice: ulid, display: "modal", layout: "narrow"})
+          .open(),
+      {api: API, ulid: ULID}
+    );
+
+    await page.getByRole("dialog").waitFor();
+    await openForm(page, "[data-coinfat]");
+
+    // Opening it puts the caret in the field. Tab away and cycle back: the trap
+    // enumerates focusables at the moment Tab is pressed, so a field mounted after the
+    // dialog opened is the case that would be missed.
+    const focused = () =>
+      page.evaluate(() => {
+        const sr = document.querySelector("[data-coinfat]")!.shadowRoot!;
+        const node = sr.activeElement as HTMLElement | null;
+        return node?.tagName.toLowerCase() ?? null;
+      });
+
+    // Polled, not asserted outright: Preact runs `useEffect` after paint, so the input
+    // exists in the DOM a frame before the effect moves focus into it.
+    await expect.poll(focused).toBe("input");
+
+    let returned = false;
+
+    for (let press = 0; press < 12 && !returned; press++) {
+      await page.keyboard.press("Tab");
+      returned = (await focused()) === "input";
+    }
+
+    // Never escaping to the host page is the trap's job; coming back round is the
+    // proof the input is inside it rather than skipped over.
+    expect(returned).toBe(true);
   });
 });

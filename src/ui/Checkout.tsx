@@ -62,6 +62,8 @@ function renderBody(
         wallets={state.wallets}
         walletsError={state.walletsError}
         mutating={state.mutating}
+        savingEmail={state.savingEmail}
+        emailError={state.emailError}
         layout={layout}
         controller={controller}
         onRequestClose={onRequestClose}
@@ -82,6 +84,8 @@ function InvoiceCard({
   wallets,
   walletsError,
   mutating,
+  savingEmail,
+  emailError,
   layout,
   controller,
   onRequestClose
@@ -91,6 +95,8 @@ function InvoiceCard({
   wallets: Wallet[] | null;
   walletsError: CheckoutApiError | null;
   mutating: boolean;
+  savingEmail: boolean;
+  emailError: CheckoutApiError | null;
   layout: WidgetLayout;
   controller: CheckoutController;
   onRequestClose?: () => void;
@@ -244,6 +250,9 @@ function InvoiceCard({
                 amount={invoice.amount}
                 controller={controller}
                 mutating={mutating}
+                payerEmail={invoice.payer_email}
+                savingEmail={savingEmail}
+                emailError={emailError}
                 layout={layout}
                 onChangeCoin={canSwitch ? startSwitch : undefined}
               />

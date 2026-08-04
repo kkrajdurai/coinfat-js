@@ -14,6 +14,8 @@ const state = (over: Partial<CheckoutState> = {}): CheckoutState => ({
   error: null,
   isTerminal: false,
   mutating: false,
+  savingEmail: false,
+  emailError: null,
   ...over
 });
 

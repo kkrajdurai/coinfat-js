@@ -135,6 +135,25 @@ export interface CheckoutStrings {
   noNetworks: string;
   optionsError: string;
 
+  // Payer notification email. The whole prompt is one string, not a link spliced into a
+  // sentence: a locale owns its word order, and on a phone the whole row is the tap
+  // target rather than three words inside it.
+  emailNotify: string;
+  emailLabel: string;
+  emailPlaceholder: string;
+  emailSubmit: string;
+  /**
+   * What actually happens, under the field. Deliberately not a consent line: this is one
+   * transactional email about this payment, so promising a subscription would be false —
+   * and so would any promise about who else can see the address, which is the store's
+   * business, not the SDK's.
+   */
+  emailNote: string;
+  /** Confirmation, carrying the masked address back so a typo is catchable. */
+  emailSaved: (masked: string) => string;
+  /** Reopens the field on an address already stored. */
+  emailChange: string;
+
   // FAQ
   /**
    * The questions, in display order. An empty list removes the FAQ entirely, trigger

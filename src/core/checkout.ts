@@ -36,6 +36,18 @@ export interface CheckoutState {
   isTerminal: boolean;
   /** A `select()` or `requote()` is in flight. One flag: they supersede each other. */
   mutating: boolean;
+  /**
+   * A `setPayerEmail()` is in flight. Deliberately NOT `mutating`: that flag means "the
+   * payment is being re-quoted", and it drives the picker's and the refresh button's
+   * busy states. Signing up for a notification changes neither.
+   */
+  savingEmail: boolean;
+  /**
+   * Why the last `setPayerEmail()` failed. Its own field for the same reason `wallets`
+   * has `walletsError`: this one belongs under the input the payer typed into, while
+   * `error` paints a banner across the top of the card and re-arms `onError`.
+   */
+  emailError: CheckoutApiError | null;
 }
 
 export type CheckoutListener = (state: CheckoutState) => void;
@@ -60,7 +72,9 @@ export class CheckoutController {
     notFound: false,
     error: null,
     isTerminal: false,
-    mutating: false
+    mutating: false,
+    savingEmail: false,
+    emailError: null
   };
 
   private readonly listeners = new Set<CheckoutListener>();
@@ -69,6 +83,13 @@ export class CheckoutController {
   private abort: AbortController | null = null;
   /** Separate from `abort` so the one-off wallets fetch is never cancelled by a poll. */
   private walletsAbort: AbortController | null = null;
+  /**
+   * Likewise separate: signing up for a notification neither supersedes nor is
+   * superseded by a coin switch, so the two must not share `abort`.
+   */
+  private emailAbort: AbortController | null = null;
+  /** The last notification address reported, masked. See `withPayerEmail`. */
+  private payerEmail: string | null = null;
   private started = false;
   /** Consecutive failed fetches, used to back off polling (and 429s). */
   private errorStreak = 0;
@@ -128,6 +149,17 @@ export class CheckoutController {
     this.abort = null;
     this.walletsAbort?.abort();
     this.walletsAbort = null;
+    this.emailAbort?.abort();
+    this.emailAbort = null;
+
+    // Both in-flight flags are owned by the call that set them, and an aborted call
+    // returns without clearing its own — whoever superseded it is still running and will.
+    // A teardown supersedes without a successor, so it has to clear them here or a modal
+    // closed mid-request reopens (same controller: close -> stop, open -> start) with a
+    // spinner that never stops.
+    if (this.state.mutating || this.state.savingEmail) {
+      this.patch({mutating: false, savingEmail: false});
+    }
   }
 
   /**
@@ -191,6 +223,70 @@ export class CheckoutController {
 
   async requote(): Promise<void> {
     return this.mutate((signal) => this.api.requote(this.ulid, signal));
+  }
+
+  /**
+   * Sign the payer up to be emailed when this invoice completes.
+   *
+   * Deliberately NOT routed through `mutate()`, which exists to serialise the two calls
+   * that re-quote the payment: it aborts whatever is in flight and bumps the mutation
+   * sequence, so an address submitted mid-switch would cancel the switch — and it raises
+   * `mutating`, which spins the picker and the refresh-rate button. This supersedes
+   * nothing and is superseded by nothing, so it gets its own handle and its own flags.
+   *
+   * Like the mutations, it never rejects: it is called from a click handler, so a
+   * rejection would surface as an unhandledrejection on the merchant's page.
+   */
+  async setPayerEmail(email: string): Promise<void> {
+    // The backend 422s a settled invoice, and the view can be a poll behind. Nothing
+    // useful to tell the payer about a checkout that is already over.
+    if (this.state.isTerminal) {
+      return;
+    }
+
+    this.emailAbort?.abort();
+    const controller = new AbortController();
+    this.emailAbort = controller;
+    this.patch({savingEmail: true, emailError: null});
+
+    try {
+      const invoice = await this.api.setPayerEmail(
+        this.ulid,
+        email,
+        controller.signal
+      );
+
+      // Superseded by a newer submission, or torn down. Not ours to apply.
+      if (this.emailAbort !== controller) {
+        return;
+      }
+
+      // Only the one field, though the response is a whole Checkout the handoff invites
+      // us to swap in wholesale. That body was serialised before any concurrent
+      // select/requote landed, so applying it entire can resurrect the payment the payer
+      // just switched away from. This endpoint is authoritative about `payer_email` and
+      // nothing else.
+      const current = this.state.invoice;
+      this.rememberPayerEmail(invoice.payer_email);
+
+      if (current) {
+        this.patch({
+          invoice: {...current, payer_email: invoice.payer_email},
+          emailError: null
+        });
+      }
+    } catch (error) {
+      if (isAbortError(error) || this.emailAbort !== controller) {
+        return;
+      }
+
+      this.patch({emailError: error as CheckoutApiError});
+    } finally {
+      if (this.emailAbort === controller) {
+        this.emailAbort = null;
+        this.patch({savingEmail: false});
+      }
+    }
   }
 
   /** Run a select/requote in isolation from the poll loop, then resume polling. */
@@ -257,12 +353,36 @@ export class CheckoutController {
 
   private applyInvoice(invoice: Checkout): void {
     this.patch({
-      invoice,
+      invoice: this.withPayerEmail(invoice),
       isLoading: false,
       notFound: false,
       error: null,
       isTerminal: TERMINAL_STATUSES.has(invoice.status)
     });
+  }
+
+  private rememberPayerEmail(masked: string | null): void {
+    if (masked) {
+      this.payerEmail = masked;
+    }
+  }
+
+  /**
+   * Keep a notification address the invoice has already reported.
+   *
+   * `payer_email` only ever goes null -> mask -> another mask; the backend offers no way
+   * to remove one. But `setPayerEmail` deliberately runs beside the poll rather than
+   * suspending it, so a GET serialised BEFORE a successful PUT can land after it — and
+   * that body still says null. Without this, the confirmation the payer is reading flips
+   * back to "Email me when this payment confirms" until the next poll, which reads as the
+   * address having been lost and invites a pointless second submission.
+   */
+  private withPayerEmail(invoice: Checkout): Checkout {
+    this.rememberPayerEmail(invoice.payer_email);
+
+    return invoice.payer_email || !this.payerEmail
+      ? invoice
+      : {...invoice, payer_email: this.payerEmail};
   }
 
   private schedulePoll(): void {

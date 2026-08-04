@@ -116,6 +116,15 @@ export function AlertIcon() {
   );
 }
 
+export function MailIcon() {
+  return (
+    <Icon class="size-3.5 shrink-0">
+      <rect x="3" y="5" width="18" height="14" rx="2" {...STROKE} />
+      <path d="m3.5 7 8.5 6 8.5-6" {...ROUNDED} />
+    </Icon>
+  );
+}
+
 export function HelpIcon() {
   return (
     <Icon>

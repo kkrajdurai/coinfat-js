@@ -70,6 +70,15 @@ export const en: CheckoutStrings = {
   noNetworks: "No networks are available for this coin.",
   optionsError: "Couldn't load the payment options.",
 
+  emailNotify: "Email me when this payment confirms",
+  emailLabel: "Email",
+  emailPlaceholder: "you@example.com",
+  emailSubmit: "Notify me",
+  emailNote:
+    "We'll send one email about this payment, once it confirms. Nothing else.",
+  emailSaved: (masked) => `We'll email ${masked} once this payment confirms.`,
+  emailChange: "Change",
+
   faq: [
     {
       id: "how-to-pay",

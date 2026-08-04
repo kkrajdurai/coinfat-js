@@ -217,3 +217,181 @@ describe("wallets", () => {
     expect(calls).toBe(1);
   });
 });
+
+/**
+ * The notification address is the one mutation that does NOT re-quote the payment, so it
+ * runs beside `select`/`requote` rather than through the same gate. Everything here is
+ * about that separation holding.
+ */
+describe("payer email", () => {
+  it("does not cancel a coin switch running alongside it", async () => {
+    let selected: string | null = null;
+
+    const api = fakeApi({
+      show: async () => invoice(),
+      select: async (_u: string, networkId: string, signal?: AbortSignal) => {
+        await delay(20, signal);
+        selected = networkId;
+        return invoice({active_payment: payment("pay_1", networkId)});
+      },
+      setPayerEmail: async () => invoice({payer_email: "j***@example.com"})
+    });
+
+    const engine = controller("inv_1", api, NEVER_POLL);
+    engine.start();
+    await sleep(5);
+
+    // Routed through `mutate`, this would abort the in-flight select outright.
+    const switching = engine.select("net_2");
+    await sleep(5);
+    await engine.setPayerEmail("jane@example.com");
+    await switching;
+
+    expect(selected).toBe("net_2");
+    expect(engine.getState().invoice?.active_payment?.wallet_network?.id).toBe(
+      "net_2"
+    );
+  });
+
+  it("never raises `mutating`, which drives the picker and refresh spinners", async () => {
+    const seen: boolean[] = [];
+
+    const api = fakeApi({
+      show: async () => invoice(),
+      setPayerEmail: async (_u: string, _e: string, signal?: AbortSignal) => {
+        await delay(10, signal);
+        return invoice({payer_email: "j***@example.com"});
+      }
+    });
+
+    const engine = controller("inv_1", api, NEVER_POLL);
+    engine.subscribe((state) => seen.push(state.mutating));
+    engine.start();
+    await sleep(5);
+
+    const saving = engine.setPayerEmail("jane@example.com");
+    expect(engine.getState().savingEmail).toBe(true);
+    await saving;
+
+    expect(seen).not.toContain(true);
+    expect(engine.getState().savingEmail).toBe(false);
+  });
+
+  it("takes only payer_email off the response, not the stale payment beside it", async () => {
+    const api = fakeApi({
+      show: async () => invoice({active_payment: payment("pay_1", "net_1")}),
+      select: async (_u: string, networkId: string) =>
+        invoice({active_payment: payment("pay_1", networkId)}),
+      // Serialised before the switch landed: this body still carries net_1.
+      setPayerEmail: async (_u: string, _e: string, signal?: AbortSignal) => {
+        await delay(20, signal);
+        return invoice({
+          active_payment: payment("pay_1", "net_1"),
+          payer_email: "j***@example.com"
+        });
+      }
+    });
+
+    const engine = controller("inv_1", api, NEVER_POLL);
+    engine.start();
+    await sleep(5);
+
+    const saving = engine.setPayerEmail("jane@example.com");
+    await engine.select("net_2");
+    await saving;
+
+    const state = engine.getState();
+    expect(state.invoice?.payer_email).toBe("j***@example.com");
+    // Applying the response whole would resurrect the network the payer left.
+    expect(state.invoice?.active_payment?.wallet_network?.id).toBe("net_2");
+  });
+
+  it("keeps its failure off the card-level error banner", async () => {
+    const api = fakeApi({
+      show: async () => invoice(),
+      setPayerEmail: async () => {
+        throw new CheckoutApiError("The email field must be valid.", 422, {
+          email: ["The email field must be valid."]
+        });
+      }
+    });
+
+    const engine = controller("inv_1", api, NEVER_POLL);
+    engine.start();
+    await sleep(5);
+    await engine.setPayerEmail("nope");
+
+    const state = engine.getState();
+    expect(state.emailError?.status).toBe(422);
+    // `error` paints a banner across the card and re-arms the merchant's onError.
+    expect(state.error).toBeNull();
+  });
+
+  it("does not submit against a settled invoice", async () => {
+    let calls = 0;
+
+    const api = fakeApi({
+      show: async () => invoice({status: "completed"}),
+      setPayerEmail: async () => {
+        calls++;
+        return invoice();
+      }
+    });
+
+    const engine = controller("inv_1", api, NEVER_POLL);
+    engine.start();
+    await sleep(5);
+    await engine.setPayerEmail("jane@example.com");
+
+    expect(calls).toBe(0);
+  });
+
+  it("clears the in-flight flag when a teardown aborts it", async () => {
+    const api = fakeApi({
+      show: async () => invoice(),
+      setPayerEmail: async (_u: string, _e: string, signal?: AbortSignal) => {
+        await delay(50, signal);
+        return invoice({payer_email: "j***@example.com"});
+      }
+    });
+
+    const engine = controller("inv_1", api, NEVER_POLL);
+    engine.start();
+    await sleep(5);
+
+    void engine.setPayerEmail("jane@example.com");
+    await sleep(5);
+    // A modal closed mid-request reopens on the same controller.
+    engine.stop();
+    await sleep(5);
+
+    expect(engine.getState().savingEmail).toBe(false);
+  });
+});
+
+describe("payer email, against the poll", () => {
+  it("survives a show that was serialised before the address was saved", async () => {
+    let shows = 0;
+
+    const api = fakeApi({
+      show: async (_u: string, signal?: AbortSignal) => {
+        shows++;
+        // The second poll is slow: issued before the PUT, lands after it, and its body
+        // still predates the address.
+        if (shows === 2) await delay(40, signal);
+        return invoice({payer_email: null});
+      },
+      setPayerEmail: async () => invoice({payer_email: "j***@example.com"})
+    });
+
+    const engine = controller("inv_1", api, {pollMs: 10});
+    engine.start();
+    await sleep(20);
+    await engine.setPayerEmail("jane@example.com");
+    await sleep(60);
+
+    // Without this the confirmation the payer is reading reverts to "Email me when this
+    // payment confirms" until the next poll, which reads as the address being lost.
+    expect(engine.getState().invoice?.payer_email).toBe("j***@example.com");
+  });
+});

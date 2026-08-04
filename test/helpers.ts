@@ -46,6 +46,7 @@ export function invoice(over: Partial<Checkout> = {}): Checkout {
     amount: {amount: "10", currency: "USD", scale: 2},
     supported_wallets: [],
     active_payment: null,
+    payer_email: null,
     success_url: "https://merchant.test/thanks",
     cancel_url: null,
     expires_at: "",
@@ -72,6 +73,7 @@ export function fakeApi(parts: Partial<CheckoutApiClient>): CheckoutApiClient {
     wallets: async () => [],
     select: async () => invoice(),
     requote: async () => invoice(),
+    setPayerEmail: async () => invoice(),
     ...parts
   };
 }

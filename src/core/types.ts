@@ -140,6 +140,14 @@ export interface Checkout {
   amount: Money;
   supported_wallets: Wallet[];
   active_payment: StoreInvoicePayment | null;
+  /**
+   * Where to email the payer once this invoice completes, **masked** — first character
+   * of the local part, then `***`, then the full domain (`j***@example.com`). Null until
+   * the payer supplies one. Display-only: the full address is never returned, so this
+   * must never be sent back as the value of a `setPayerEmail` — the mask itself would
+   * be stored as the new address.
+   */
+  payer_email: string | null;
   success_url: string | null;
   cancel_url: string | null;
   expires_at: string;

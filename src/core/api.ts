@@ -45,6 +45,11 @@ export interface CheckoutApiClient {
     signal?: AbortSignal
   ): Promise<Checkout>;
   requote(ulid: string, signal?: AbortSignal): Promise<Checkout>;
+  setPayerEmail(
+    ulid: string,
+    email: string,
+    signal?: AbortSignal
+  ): Promise<Checkout>;
 }
 
 export class CheckoutApi implements CheckoutApiClient {
@@ -76,12 +81,28 @@ export class CheckoutApi implements CheckoutApiClient {
     return this.request("POST", this.endpoint(ulid, "/requote"), {signal});
   }
 
+  /**
+   * Where to email the payer once the invoice completes. Accepted only while the
+   * invoice is pending; resubmitting the stored address is a no-op that still answers
+   * 200, so a retry after a dropped request is safe.
+   */
+  setPayerEmail(
+    ulid: string,
+    email: string,
+    signal?: AbortSignal
+  ): Promise<Checkout> {
+    return this.request("PUT", this.endpoint(ulid, "/payer-email"), {
+      body: {email},
+      signal
+    });
+  }
+
   private endpoint(ulid: string, suffix = ""): string {
     return `/checkout/${encodeURIComponent(ulid)}${suffix}`;
   }
 
   private async request<T>(
-    method: "GET" | "POST",
+    method: "GET" | "POST" | "PUT",
     path: string,
     {body, signal}: RequestOptions
   ): Promise<T> {

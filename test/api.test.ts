@@ -38,6 +38,25 @@ describe("requests", () => {
     );
     expect(init.body).toBe(JSON.stringify({wallet_network_id: "btc-net-1"}));
   });
+
+  it("PUTs the payer's notification address, still credential-less", async () => {
+    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) =>
+      response(JSON.stringify(invoice({payer_email: "j***@example.com"})))
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await api().setPayerEmail("inv_1", "jane.doe@example.com");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      "https://test-api.example/api/v1/checkout/inv_1/payer-email"
+    );
+    expect(init.method).toBe("PUT");
+    expect(init.body).toBe(JSON.stringify({email: "jane.doe@example.com"}));
+    // The address is the payer's, but the invoice ulid is still the only capability.
+    expect(init.credentials).toBe("omit");
+    expect(init.headers).not.toHaveProperty("Authorization");
+  });
 });
 
 describe("failures", () => {

@@ -59,6 +59,9 @@ function mount(
       amount={{amount: "42.50", currency: "USD", scale: 2} as never}
       controller={controller}
       mutating={false}
+      payerEmail={null}
+      savingEmail={false}
+      emailError={null}
       layout={layout}
       onChangeCoin={onChangeCoin}
     />,
@@ -77,6 +80,9 @@ function rerender(into: HTMLDivElement, node: StoreInvoicePayment): void {
         new CheckoutController("inv_1", fakeApi({}), {pollMs: 999_999})
       }
       mutating={false}
+      payerEmail={null}
+      savingEmail={false}
+      emailError={null}
       layout="narrow"
     />,
     into
