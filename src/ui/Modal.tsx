@@ -356,14 +356,14 @@ function PoweredBy() {
   return (
     <div
       aria-hidden="true"
-      class="pointer-events-none fixed right-4 bottom-3.5 flex items-center gap-2 text-[11px] leading-none font-medium text-white/60 select-none">
+      class="pointer-events-none fixed right-4 bottom-3.5 flex flex-col items-end gap-1 text-[13px] leading-none font-medium text-white/60 select-none">
       <span>{strings.poweredBy}</span>
       <span
-        // Mark and wordmark are one lockup, so they sit tighter to each other than the
-        // lead-in sits to them — at a single gap all three read as separate items.
+        // Mark and wordmark are one lockup — the lead-in stacks above the pair, which
+        // stay side by side and tight to each other.
         class="flex items-center gap-1">
-        <BrandMarkIcon class="size-3 shrink-0 text-white/80" />
-        <span class="font-heading font-semibold tracking-tight text-white/85">
+        <BrandMarkIcon class="size-4 shrink-0 text-white/80" />
+        <span class="font-heading text-base font-semibold tracking-tight text-white/85">
           {BRAND.name}
         </span>
       </span>
