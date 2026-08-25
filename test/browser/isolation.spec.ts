@@ -275,6 +275,51 @@ test.describe("the attribution badge", () => {
       expect(probe.hit).toContain("fixed inset-0");
     }
   });
+
+  // The invariant behind the gutter's size, asserted directly rather than only as a
+  // side effect of an overflowing card: the badge is two stacked lines, and the scroll
+  // viewport ends above its top edge. A one-line gutter under a two-line badge (the
+  // regression) fails here without needing the card to overflow first.
+  test("stacks into two lines and the scroll gutter clears their height", async ({
+    page
+  }) => {
+    await page.evaluate(
+      ({api, ulid}) =>
+        window
+          .Coinfat({apiBase: api})
+          .checkout({invoice: ulid, display: "modal", layout: "narrow"})
+          .open(),
+      {api: API, ulid: ULID}
+    );
+
+    await page.getByRole("dialog").waitFor();
+
+    const geom = await page.evaluate(() => {
+      const sr = document.querySelector("[data-coinfat]")!.shadowRoot!;
+      const badge = sr.querySelector<HTMLElement>('div[aria-hidden="true"]')!;
+      const scroller = sr.querySelector<HTMLElement>(".overflow-y-auto")!;
+      // The badge's two direct children: the "Powered by" lead-in, and the mark +
+      // wordmark lockup stacked beneath it.
+      const lines = Array.from(
+        badge.querySelectorAll<HTMLElement>(":scope > span")
+      ).map((el) => Math.round(el.getBoundingClientRect().top));
+
+      return {
+        lineTops: lines,
+        badgeTop: badge.getBoundingClientRect().top,
+        scrollerBottom: scroller.getBoundingClientRect().bottom
+      };
+    });
+
+    // Genuinely two lines, stacked — the lockup sits below the lead-in. This is the
+    // height the gutter has to account for.
+    expect(geom.lineTops.length).toBe(2);
+    expect(geom.lineTops[1]).toBeGreaterThan(geom.lineTops[0]);
+
+    // The scroll viewport ends above the badge's top edge, so no scroll position can
+    // slide a control under the pointer-events-none badge.
+    expect(geom.scrollerBottom).toBeLessThanOrEqual(geom.badgeTop);
+  });
 });
 
 // The address is the longest unbroken string on the panel and the one a payer checks
