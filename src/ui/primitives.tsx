@@ -338,7 +338,10 @@ export function RateLock({start, target, onElapsed}: RateLockProps) {
   // The denominator is the full lock window (start → expiry), not the time left at
   // mount — otherwise the bar reads 100% on every reload regardless of how much has
   // already elapsed.
-  const total = Math.max(1, new Date(target).getTime() - new Date(start).getTime());
+  const total = Math.max(
+    1,
+    new Date(target).getTime() - new Date(start).getTime()
+  );
   const remaining = useCountdown({target, onElapsed});
 
   const pct = Math.max(0, Math.min(100, (remaining / total) * 100));
