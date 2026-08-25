@@ -232,13 +232,15 @@ export function Modal({children, onClose, layout, closeGuard}: ModalProps) {
           // The overlay scrolls (not the host page, which is locked), so a card taller
           // than the viewport stays fully reachable.
           //
-          // `bottom-10` insets the scroll VIEWPORT to clear the attribution badge.
+          // `bottom-14` insets the scroll VIEWPORT to clear the attribution badge.
           // Bottom padding cannot do this: the badge is viewport-anchored, padding is
           // content-anchored, so an overflowing card scrolls the gutter away and drops
           // the badge onto an interactive control — which `pointer-events-none` then
           // lets the payer click blind. Insetting is the only gutter that holds at
-          // every scroll position.
-          class="absolute inset-x-0 top-0 bottom-10 overflow-y-auto">
+          // every scroll position. The gutter tracks the badge's height: the stacked
+          // two-line lockup stands ~47px tall off the bottom, which `bottom-10` no
+          // longer cleared.
+          class="absolute inset-x-0 top-0 bottom-14 overflow-y-auto">
           <div
             class="flex min-h-full items-center justify-center p-4"
             onClick={closeOnSelf}>
