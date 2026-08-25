@@ -37,6 +37,7 @@ function ethPayment(
     overpaid_value: coin("0"),
     remaining_value: coin("0.00132378"),
     detected_at: null,
+    rate_locked_at: new Date(Date.now()).toISOString(),
     rate_expires_at: new Date(Date.now() + 600_000).toISOString(),
     ...over
   } as unknown as StoreInvoicePayment;

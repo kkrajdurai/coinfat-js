@@ -125,6 +125,8 @@ export interface StoreInvoicePayment {
    */
   remaining_value: Coin;
   detected_at: string | null;
+  /** When the current rate lock began. Pairs with `rate_expires_at`. Never null. */
+  rate_locked_at: string;
   /** When the rate lock lapses and a requote is needed. Never null. */
   rate_expires_at: string;
   created_at: string;

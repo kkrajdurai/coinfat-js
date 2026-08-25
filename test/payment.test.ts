@@ -26,6 +26,7 @@ function payment(over: Partial<StoreInvoicePayment> = {}): StoreInvoicePayment {
     overpaid_value: coin("0"),
     remaining_value: coin("0.5"),
     detected_at: null,
+    rate_locked_at: "2026-07-23T11:50:00Z",
     rate_expires_at: "2026-07-23T12:00:00Z",
     ...over
   } as unknown as StoreInvoicePayment;

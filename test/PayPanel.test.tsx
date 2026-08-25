@@ -33,6 +33,7 @@ function payment(over: Partial<StoreInvoicePayment> = {}): StoreInvoicePayment {
     overpaid_value: coin("0"),
     remaining_value: coin("0.5"),
     detected_at: null,
+    rate_locked_at: new Date(Date.now()).toISOString(),
     // Far enough out that the rate lock never elapses mid-test.
     rate_expires_at: new Date(Date.now() + 600_000).toISOString(),
     ...over

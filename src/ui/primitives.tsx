@@ -295,6 +295,11 @@ export interface CountdownProps {
   onElapsed?: () => void;
 }
 
+export interface RateLockProps extends CountdownProps {
+  /** ISO timestamp the lock began, so the bar measures the full window. */
+  start: string;
+}
+
 /**
  * Ticking "m:ss" until `target`, firing `onElapsed` once when it passes. `onElapsed`
  * is held in a ref so an inline arrow does not restart the interval on every render:
@@ -328,15 +333,15 @@ export function useCountdown({target, onElapsed}: CountdownProps): number {
 }
 
 /** The rate-lock bar: how long the quoted amount holds. */
-export function RateLock({target, onElapsed}: CountdownProps) {
+export function RateLock({start, target, onElapsed}: RateLockProps) {
   const strings = useStrings();
-  // Captured once as the progress-bar denominator: the component re-renders every
-  // second, so this must NOT recompute from the shrinking `remainingUntil`. The call
-  // site keys on `target`, so a new deadline remounts with a fresh total.
-  const totalRef = useRef(Math.max(1, remainingUntil(target)));
+  // The denominator is the full lock window (start → expiry), not the time left at
+  // mount — otherwise the bar reads 100% on every reload regardless of how much has
+  // already elapsed.
+  const total = Math.max(1, new Date(target).getTime() - new Date(start).getTime());
   const remaining = useCountdown({target, onElapsed});
 
-  const pct = Math.max(0, Math.min(100, (remaining / totalRef.current) * 100));
+  const pct = Math.max(0, Math.min(100, (remaining / total) * 100));
   const low = remaining < 60_000;
 
   return (

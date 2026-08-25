@@ -239,6 +239,7 @@
         "symbol": "ETH"
       },
       "detected_at": null,
+      "rate_locked_at": "2026-07-24T09:33:34.000000Z",
       "rate_expires_at": "2026-07-24T09:43:34.000000Z",
       "created_at": "2026-07-24T09:28:34.000000Z",
       "updated_at": "2026-07-24T09:35:05.000000Z",

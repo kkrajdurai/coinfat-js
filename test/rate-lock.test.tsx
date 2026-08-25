@@ -12,7 +12,7 @@ import {fakeApi, invoice, sleep} from "./helpers.js";
 
 const coin = (amount: string) => ({amount, wallet: "btc", symbol: "BTC"});
 
-function payment(expiresInMs: number): StoreInvoicePayment {
+function payment(expiresInMs: number, lockedMsAgo = 0): StoreInvoicePayment {
   return {
     ulid: "pay_1",
     status: "pending",
@@ -26,6 +26,7 @@ function payment(expiresInMs: number): StoreInvoicePayment {
     overpaid_value: coin("0"),
     remaining_value: coin("0.5"),
     detected_at: null,
+    rate_locked_at: new Date(Date.now() - lockedMsAgo).toISOString(),
     rate_expires_at: new Date(Date.now() + expiresInMs).toISOString()
   } as unknown as StoreInvoicePayment;
 }
@@ -80,6 +81,24 @@ describe("rate lock", () => {
     // The countdown keeps ticking at zero; only the first may reach the network.
     expect(requotes).toBe(1);
     expect(el.textContent).toContain("Refresh rate");
+  });
+
+  it("fills the bar to the window elapsed, not full on every reload", () => {
+    const controller = new CheckoutController("inv_1", fakeApi({}), {
+      pollMs: 999_999
+    });
+
+    // The lock opened five minutes ago and holds for five more: a payer landing
+    // (or reloading) now is halfway through the window, so the bar must read ~50%.
+    // The bug this guards: a mount-time denominator makes it 100% on every reload.
+    const el = mount(payment(300_000, 300_000), controller);
+
+    const bar = el.querySelector<HTMLDivElement>(".bg-accent-surface");
+    expect(bar).not.toBeNull();
+
+    const pct = parseFloat(bar!.style.width);
+    expect(pct).toBeGreaterThan(45);
+    expect(pct).toBeLessThan(55);
   });
 
   it("offers no refresh button while the lock still holds", () => {

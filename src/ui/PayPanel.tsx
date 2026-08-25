@@ -269,6 +269,7 @@ export function PayPanel({
             <>
               <RateLock
                 key={payment.rate_expires_at}
+                start={payment.rate_locked_at}
                 target={payment.rate_expires_at}
                 onElapsed={handleElapsed}
               />
